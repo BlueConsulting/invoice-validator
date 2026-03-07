@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SuperUser Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f6fb;
+      color: #111;
+    }
+
+    /* Header */
+    .header {
+      background: #2563eb;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 18px;
+    }
+
+    /* Profile */
+    .profile-menu {
+      position: relative;
+    }
+
+    .profile-trigger {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .profile-label {
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      background: #e5e7eb;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #111;
+    }
+
+    .dropdown {
+      position: absolute;
+      right: 0;
+      top: 46px;
+      background: #fff;
+      border: 1px solid #ddd;
+      width: 200px;
+      padding: 10px 12px;
+      font-size: 13px;
+      display: none;
+      z-index: 100;
+    }
+
+    .dropdown-email {
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+
+    .dropdown-role {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .dropdown a {
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .profile-menu.open .dropdown {
+      display: block;
+    }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 60px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 16px;
+    }
+
+    .sidebar-item {
+      padding: 10px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .sidebar-item.active,
+    .sidebar-item:hover {
+      background: #eef2ff;
+      font-weight: 600;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      padding: 24px;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* Cards / Boxes */
+    .box {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .box h3 {
+      margin-bottom: 12px;
+    }
+
+    /* Form */
+    form label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    form input, form select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    form button {
+      margin-top: 15px;
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    form button:hover {
+      background: #1e40af;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table th, table td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    table th {
+      background: #7eaee0;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Header -->
+<div class="header">
+
+  <h1>SuperUser Dashboard</h1>
+
+  <div class="profile-menu">
+
+    <div class="profile-trigger">
+      <span class="profile-label">Profile</span>
+      <div class="avatar">👤</div>
+    </div>
+
+    <div class="dropdown">
+      <div class="dropdown-email"><strong>{{ request.user.username }}</strong></div>
+      <!--<div class="dropdown-role">Email: {{ request.user.email }}</div>-->
+      <div class="dropdown-role">Role: {{ user_role }}</div>
+      <a href="{% url 'logout' %}">Logout</a>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showSection('dashboard', this)">Dashboard</div>
+    <div class="sidebar-item" onclick="showSection('users', this)">User Management</div>
+    <div class="sidebar-item" onclick="showSection('settings', this)">GST Details</div>
+  </div>
+
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Messages Display (Common for all sections) -->
+    {% if messages %}
+    <div style="margin-bottom: 16px;" id="messages-container">
+      {% for message in messages %}
+        <div style="padding:10px; background:{% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; border-radius:4px; margin-bottom:8px; color:#111;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="section active">
+      <div class="box">
+        <h3>Account Information</h3>
+        <p><strong>Email:</strong> {{ request.user.email }}</p>
+        <br>
+        <p><strong>Role:</strong> {{ user_role }}</p>
+        <br>
+        {% if company %}
+          <p><strong>Company:</strong> {{ company.business_name }}</p>
+          <br>
+          <p><strong>Company Code:</strong> {{ company.company_code }}</p>
+        {% endif %}
+      </div>
+    </div>
+    
+  
+    <!-- User Management -->
+    <div id="users" class="section">
+
+      <div class="box">
+        <h3>👤 Add User</h3>
+        
+        <form method="POST" action="{% url 'superuser_dashboard' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_user">
+          
+          <div style="margin-bottom: 16px;">
+            {{ user_form.username.label_tag }}
+            {{ user_form.username }}
+            {% if user_form.username.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.username.errors.0 }}</small>
+            {% endif %}
+          </div>
+
+          
+          <div style="margin-bottom: 16px;">
+            {{ user_form.email.label_tag }}
+            {{ user_form.email }}
+            {% if user_form.email.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.email.errors.0 }}</small>
+            {% endif %}
+          </div>
+
+
+          <div style="margin-bottom: 16px;">
+            {{ user_form.password.label_tag }}
+            {{ user_form.password }}
+            <small style="color:#666; font-size:12px; display:block; margin-top:4px;">{{ user_form.password.help_text }}</small>
+            {% if user_form.password.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.password.errors.0 }}</small>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            {{ user_form.confirm_password.label_tag }}
+            {{ user_form.confirm_password }}
+            {% if user_form.confirm_password.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.confirm_password.errors.0 }}</small>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            {{ user_form.role.label_tag }}
+            {{ user_form.role }}
+            {% if user_form.role.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.role.errors.0 }}</small>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            {{ user_form.status.label_tag }}
+            {{ user_form.status }}
+            {% if user_form.status.errors %}
+              <small style="color:#dc3545; font-size:12px; display:block; margin-top:4px;">{{ user_form.status.errors.0 }}</small>
+            {% endif %}
+          </div>
+        
+        
+
+          {% if user_form.non_field_errors %}
+            <div style="padding:10px; background:#f8d7da; border-radius:4px; margin-bottom:12px; color:#111;">
+              {{ user_form.non_field_errors.0 }}
+            </div>
+          {% endif %}
+
+          <button type="submit">Add User</button>
+        </form>
+      </div>
+
+      <div class="box">
+        <h3>All Users</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.role }}</td>
+              <td>{{ user.status }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No users found</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+
+    <!-- GST Details -->
+    <div id="settings" class="section">
+      
+
+      <!-- Add GST Details Form -->
+      <div class="box">
+
+        <h3>📋 Add GST Registration</h3>
+        
+        <form method="POST" action="{% url 'superuser_dashboard' %}" autocomplete="off">
+
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_gst">
+          
+          <div style="margin-bottom: 16px;">
+            {{ gst_form.state.label_tag }}
+            {{ gst_form.state }}
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            {{ gst_form.gst_number.label_tag }}
+            {{ gst_form.gst_number }}
+            <small style="color:#666; font-size:12px; display:block; margin-top:4px;">Format: 27AABCU9603R1ZX (15 characters)</small>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            {{ gst_form.gst_address.label_tag }}
+            {{ gst_form.gst_address }}
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            {{ gst_form.gst_portal_user_id.label_tag }}
+            {{ gst_form.gst_portal_user_id }}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            {{ gst_form.gst_portal_password.label_tag }}
+            {{ gst_form.gst_portal_password }}
+            <small style="color:#666; font-size:12px; display:block; margin-top:4px;">Credentials are optional but must be provided together</small>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            {{ gst_form.is_active }}
+            <label for="id_is_active" style="display:inline; margin-left:5px; font-weight:normal;">Active</label>
+          </div>
+
+          <button type="submit">Add GST Details</button>
+
+        </form>
+
+      </div>
+
+
+      <!-- GST Details Table -->
+      <div class="box">
+        <h3>All GST Registrations</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>GST Number</th>
+              <th>Address</th>
+              <th>Portal User ID</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gst in gst_details %}
+            <tr>
+              <td>{{ gst.state }}</td>
+              <td>{{ gst.gst_number }}</td>
+              <td>{{ gst.gst_address|truncatewords:10 }}</td>
+              <td>{{ gst.gst_portal_user_id|default:"Not Provided" }}</td>
+              <td>
+                {% if gst.is_active %}
+                  <span style="color:green;">●</span> Active
+                {% else %}
+                  <span style="color:red;">●</span> Inactive
+                {% endif %}
+              </td>
+              <td>{{ gst.updated_at|date:"d M Y" }}</td>
+              <td>
+                <form method="POST" action="{% url 'delete_gst_detail' gst.id %}" style="display:inline;" 
+                      onsubmit="return confirm('Are you sure you want to delete GST details for {{ gst.state }}?');">
+                  {% csrf_token %}
+                  <button type="submit" style="background:#dc3545; padding:5px 10px; font-size:12px;">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">No GST registrations found. Add your first GST registration above.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+  const menu = document.querySelector('.profile-menu');
+  const trigger = document.querySelector('.profile-trigger');
+
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  };
+
+  document.onclick = () => menu.classList.remove('open');
+
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Check URL query parameter for section and show correct section on page load
+  window.addEventListener('load', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    
+    if (section) {
+      // Find the sidebar item that corresponds to this section
+      const sidebarItems = document.querySelectorAll('.sidebar-item');
+      sidebarItems.forEach(item => {
+        const onclick = item.getAttribute('onclick');
+        if (onclick && onclick.includes(`showSection('${section}'`)) {
+          showSection(section, item);
+        }
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

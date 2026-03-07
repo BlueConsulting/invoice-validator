@@ -1,0 +1,3148 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+  <title>User Dashboard - Invoice Management</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f4f6fb; }
+    
+    /* Header */
+
+    .header {
+      background: #2563eb;
+      color: #fff;
+      padding: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .header-title {
+      padding: 16px 24px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .header-nav {
+      display: flex;
+      gap: 0;
+      flex: 1;
+      margin-left: 24px;
+    }
+
+    .nav-btn {
+      padding: 16px 20px;
+      background: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .nav-btn.active {
+      border-bottom-color: #fff;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      padding: 16px 24px;
+      align-items: center;
+    }
+
+    .upload-btn-header {
+      background: #10b981;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .upload-btn-header:hover {
+      background: #059669;
+    }
+
+    .logout-btn {
+      background: #374151;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .logout-btn:hover {
+      background: #1f2937;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+    
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+
+    /* Upload Section */
+    .upload-section {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .upload-section h2 {
+      margin-bottom: 12px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .upload-section p {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .upload-section input[type="file"] {
+      margin-bottom: 12px;
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      width: 100%;
+    }
+
+    .submit-upload {
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .submit-upload:hover {
+      background: #1d4ed8;
+    }
+    
+
+
+    /* Filters */
+    .filters-section {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .filter-btn {
+      background: #2563eb;
+      color: #fff;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .filter-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .clear-filters {
+      color: #6b7280;
+      text-decoration: none;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .clear-filters:hover {
+      color: #111827;
+    }
+    
+
+
+    /* Invoice Table */
+    .invoice-table {
+      background: #f5f1f1;
+      border-radius: 8px;
+      /* overflow: hidden; */
+      overflow: auto;
+      max-height: 80vh;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }   
+
+    th {
+      background: #0b5ed7;           /* Strong blue */
+      padding: 12px 10px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ffffff;               /* White text */
+      border-bottom: 2px solid #084298;
+      border-right: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    th:last-child {
+      border-right: none;
+    }
+
+
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;  /* vertical lines */
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    td:last-child {
+      border-right: none;
+    }
+
+    tbody tr:hover {
+      background: #f1f5f9;
+    }
+    
+    .action-btn {
+      padding: 6px 12px;
+      margin-right: 6px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .good-to-account-btn { background: #10b981; color: #fff; }
+    .hold-btn { background: #f59e0b; color: #fff; }
+    .reject-btn { background: #ef4444; color: #fff; }
+    .summary-btn { background: #6366f1; color: #fff; }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #9ca3af;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .messages {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 6px;
+    }
+
+    .messages.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .messages.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+
+    /* ===== Check Buttons ===== */    
+    .check-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .check-btn {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+        
+    .check-btn:hover {
+      background: #e0e7ff;
+    }
+
+    .check-btn.featured {
+      background: #f78888;
+      color: #1f2937;
+      border: 1px solid #f56565;
+      font-weight: 700;
+    }
+
+    .check-btn.featured:hover {
+      background: #ffffff;
+      color: #b91c1c;
+      border-color: #f56565;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+      transform: translateY(-1px);
+    }
+
+    .status-badge {
+      display: inline-block;
+      background-color: #e5f0ff;
+      color: #1d4ed8;
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    
+    /* MODAL */    
+    .modal {
+      display: none;                 /* hidden by default */
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+
+      /* CENTERING LOGIC */
+      align-items: center;           /* vertical center */
+      justify-content: center;       /* horizontal center */
+    }
+
+    .modal.is-open {
+      display: flex;
+    }
+
+    .modal-table tr {
+      height: 38px;
+    }
+
+    .modal-table td {
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1px solid #f1d6d0;
+      vertical-align: middle;
+    }
+
+    .modal-table th {
+      background-color: #4a4a4a;
+      padding: 6px 10px;
+      font-size: 12px;
+      line-height: 1.2;
+      color: #fff;
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 1200px;   /* good for table */
+      max-height: 85vh;
+      overflow-y: auto;    /* scrolling if table is large */
+    }
+
+    .close {
+      float: right;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .modal-table td:first-child {
+      font-weight: 600;
+    }
+
+    .sub-section-header td {
+      font-size: 24px;           
+      font-weight: 700;           
+      padding: 10px 8px;
+      background: #f5f5f5;    
+    }
+
+    
+    /* ===== Remark Section ===== */
+    .remark-section {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .remark-label {
+      font-size: 13px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      align-self: flex-start;
+    }
+
+    .remark-input {
+      width: 100%;
+      height: 26px;
+      padding: 3px 6px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    .save-remark-btn {
+      background-color: #6b4f3f;    /* brown */
+      color: #fff;
+      border: none;
+      padding: 4px 14px;
+      font-size: 12px;
+      height: 28px;
+      border-radius: 3px;
+      cursor: pointer; 
+    }
+
+    .save-remark-btn:hover {
+      background-color: #5a4032;
+    }
+
+    .remark-action-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+
+
+    /* ===== Action Dropdown ===== */
+
+    .action-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .action-dropdown-btn {
+      background-color: #0d6efd;
+      border: none;
+      padding: 6px 12px;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      /* font-weight: 600; */
+    }
+
+    .action-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 160px;
+      background: white;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+
+    .action-dropdown.open .action-dropdown-menu {
+      display: block;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      padding: 8px 10px;
+      border: none;
+      background: none;
+      text-align: left;
+      cursor: pointer;
+      font-size: 13px;
+
+    }
+    
+    .dropdown-item.approve {color: #10b981;}
+    .dropdown-item.hold {color: #f59e0b;}
+    .dropdown-item.reject {color: #ef4444;}
+   
+    .dropdown-item:hover {
+      background-color: #f2f2f2;
+    }
+    
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .actions-header {
+      text-align: center;
+      padding-left: 10px;
+    }
+
+    .invoice-table table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .file-header {
+      text-align: center;
+      width: 140px;
+      white-space: nowrap;
+    }
+
+    /* Pagination Styles */
+    .pagination {
+      margin: 20px 0;
+      padding: 15px;
+      text-align: center;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+    }
+
+    .pagination-btn {
+      display: inline-block;
+      padding: 8px 15px;
+      margin: 0 5px;
+      background-color: #111827;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    .pagination-btn:hover {
+      background-color: #1f2937;
+    }
+
+    /* Dashboard container (main box) */
+    .dashboard-container {
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    .dashboard-heading {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+
+    /* Summary Cards */
+    .summary-container {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .summary-card {
+      min-width: 110px;
+      max-width: 130px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .summary-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    }
+
+    .summary-title {
+      font-size: 12px;
+      opacity: 0.95;
+    }
+
+    /* Space between summary and upload */
+    .dashboard-section-gap {
+      position: relative;
+      height: 180px;
+      margin-bottom: 20px;
+    }
+
+    /* Summary container styling */
+    .summary-container {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 0;
+    }
+
+    .pending { background: #f39c12; }
+    .hold { background: #3498db; }
+    .rejected { background: #e74c3c; }
+    .approved { background: #2ecc71; }
+    .accounted { background: #9b59b6; }
+
+    /* Usage Meter Card */
+    .usage-meter-container {
+      display: flex;
+      justify-content: flex-end;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 100%;
+    }
+
+    .usage-card {
+      width: 420px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    }
+    .usage-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .usage-text {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: #4b5563;
+    }
+
+    .usage-bar {
+    width: 100%;
+    height: 18px;
+    background: #e9ecef;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    }
+
+    .usage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #2E7D32);
+    transition: width 0.4s ease;
+    }
+
+    .usage-remaining {
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* Dashboard section gap */
+    .dashboard-section-gap {
+      position: relative;
+      height: 180px;
+      margin-bottom: 20px;
+    }
+
+    .usage-meter-container {
+      display: flex;
+      justify-content: flex-end;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 100%;
+    }
+
+    .usage-card {
+      width: 420px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    table tbody tr:hover {
+    background-color: #dbeafe;
+    transition: 0.2s ease;
+    }  
+    
+    /* Sticky two-row header (heading row + filter row) */
+    .invoice-table thead tr:first-child th {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #0b5ed7;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .invoice-table thead tr:nth-child(2) th {
+      position: sticky;
+      top: 42px;
+      z-index: 25;
+      background: #0b5ed7;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .check-btn:hover {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      transition: 0.2s;
+    }
+
+    /* Center wrapper */
+    .einvoice-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+    }
+
+    /* Upload card */
+    .upload-card {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        width: 420px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Heading */
+    .upload-card h4 {
+        margin-bottom: 20px;
+    }
+
+    /* File input */
+    .file-input {
+        width: 100%;
+        padding: 8px;
+    }
+
+
+    /* Upload button */
+    .upload-btn {
+        margin-top: 15px;
+        padding: 8px 18px;
+        background-color: #2f6fed;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .upload-btn:hover {
+        background-color: #2459c7;
+    }
+
+
+    /* Note text */
+    .upload-note {
+        font-size: 12px;
+        color: #666;
+        margin-top: 15px;
+    }
+
+
+    /* Improves Tables Everywhere */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+    
+    th {
+      background: #f4f6f9;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #f9fbff;
+    }
+
+
+    /* Account Button Colour Change Based on Status Counts */
+    .account-green{
+        background-color:#28a745 !important;
+        color:white;
+    }
+
+    .account-yellow{
+        background-color:#ffc107 !important;
+        color:black;
+    }
+
+    .account-red{
+        background-color: #cc0000 !important;
+        color:white;
+    }
+
+    
+  </style>
+
+</head>
+
+ 
+<body>
+
+  <!-- Header with Navigation -->
+
+  <div class="header">
+
+    <div class="header-left">
+      <div class="header-title">📄 Invoice Management</div>
+      <div class="header-nav">
+        <button class="nav-btn active" onclick="showSection('upload', this)">📤 Upload Invoices</button>
+        <button class="nav-btn" onclick="showSection('pending', this)">⏳ Pending Action</button>
+        <button class="nav-btn" onclick="showSection('hold', this)">⏸ On Hold</button>
+        <button class="nav-btn" onclick="showSection('rejected', this)">❌ Rejected</button>
+        <button class="nav-btn" onclick="showSection('approved', this)">✅ Approved</button>
+        <button class="nav-btn" onclick="showSection('accounted', this)">📚 Accounted</button>
+        <!-- Step 1 : for E-Invoice Register -->
+        <button class="nav-btn" onclick="showSection('einvoiceregister', this)">🧾 E-Invoice Register</button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+
+  </div>
+
+  
+  <div class="container">
+    
+
+    <!-- Messages -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="messages {% if message.tags %}{{ message.tags }}{% else %}success{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Upload Invoices Section -->
+    <div id="upload" class="section active">
+
+      <!-- Dashboard Container -->
+      <div class="dashboard-container">
+        <div class="dashboard-heading">Invoice Status Summary</div>
+
+        <!-- SUMMARY CARDS START HERE -->
+        <div class="summary-container">
+
+          <div class="summary-card pending">
+            <div class="summary-title">Pending Action</div>
+            <div class="summary-count">{{ pending_count }}</div>
+          </div>
+
+          <div class="summary-card hold">
+            <div class="summary-title">On Hold</div>
+            <div class="summary-count">{{ hold_count }}</div>
+          </div>
+
+          <div class="summary-card rejected">
+            <div class="summary-title">Rejected</div>
+            <div class="summary-count">{{ rejected_count }}</div>
+          </div>
+
+          <div class="summary-card approved">
+            <div class="summary-title">Approved</div>
+            <div class="summary-count">{{ approved_count }}</div>
+          </div>
+
+          <div class="summary-card accounted">
+            <div class="summary-title">Accounted</div>
+            <div class="summary-count">{{ accounted_count }}</div>
+          </div>
+
+        </div>
+      </div>
+      <!-- SUMMARY CARDS END HERE -->
+      
+      <!-- Usage Meter Section -->
+      <div class="dashboard-section-gap">
+
+        <div class="usage-meter-container">
+
+          <div class="usage-card">
+            <div class="usage-title">📊 Invoice Usage</div>
+
+            <div class="usage-text">
+              <strong>{{ user_invoice_count }}</strong> / {{ max_invoices }} invoices used
+            </div>
+
+            <div class="usage-bar">
+              <div class="usage-fill"
+                  style="width: {{ usage_percentage }}%;">
+              </div>
+            </div>
+
+            <div class="usage-remaining">
+              Remaining: <strong>{{ remaining_invoices }}</strong>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="upload-section">
+        <h2>📤 Upload Invoices</h2>
+        <p>Upload your invoices here. Accepted formats: PDF, Word (.doc, .docx), JPEG. Max size: 5MB per file. You can select <strong>multiple files</strong>.</p>
+        
+        <form action="{% url 'upload_invoice' %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="file" name="invoice_files" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg" required>
+          <button type="submit" class="submit-upload">Upload Invoice(s)</button>
+        </form>
+      </div>
+
+    </div>
+
+
+
+    <!-- Pending Action Section (Standing Status) -->
+    <div id="pending" class="section">
+
+      <form id="pending-filters" method="get" action="">
+        <input type="hidden" name="section" value="pending">
+      </form>
+
+      <div style="margin-bottom: 15px;">
+        <button type="submit" form="pending-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
+        <a href="?section=pending" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
+      </div>
+
+      <div class="invoice-table">
+        {% if pending_invoices %}
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice value</th>
+              <th>Invoice Validations</th>
+              <th>Response</th>
+              <th class="file-header">File</th>
+
+              <th style="text-align:center;">
+                  Check All <br>
+                  <input type="checkbox" id="check-all">
+              </th>
+              <th class="actions-header">Actions</th>
+
+            </tr>
+
+            <!-- Filter Row -->
+            <tr style="background-color: #f5f5f5;">
+              <th><input form="pending-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
+
+              <th><input form="pending-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
+
+              <!-- <th><input form="pending-filters" type="text" name="date_prefix" value="{{ filters.date_prefix }}" placeholder="YYYY-MM-DD" style="width: 100%;"></th> -->
+
+              <th style="min-width: 200px; max-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
+                    <input form="pending-filters" type="date" 
+                           name="from_date"
+                           value="{{ filters.from_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                  
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
+                    <input form="pending-filters" type="date"
+                           name="to_date"
+                           value="{{ filters.to_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+
+                </div>
+              </th>
+
+              <th>
+                <input form="pending-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
+                <input form="pending-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
+              </th>
+
+              <th>
+                <select form="pending-filters" name="status_prefix" style="width: 100%; padding: 4px;">
+                  <option value="">All</option>
+                  <option value="Pending" {% if filters.status_prefix == "Pending" %}selected{% endif %}>Pending</option>
+                  <option value="Approved" {% if filters.status_prefix == "Approved" %}selected{% endif %}>Approved</option>
+                  <option value="Hold" {% if filters.status_prefix == "Hold" %}selected{% endif %}>Hold</option>
+                  <option value="Rejected" {% if filters.status_prefix == "Rejected" %}selected{% endif %}>Rejected</option>
+                </select>
+              </th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
+
+            </tr>
+          </thead>
+
+
+          <tbody> 
+
+            {% for invoice in pending_invoices %}
+
+
+            <tr class="invoice-row" data-invoice-id="{{ invoice.id }}">
+
+              <td>{{ invoice.vendor_name }}</td>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              
+              <td>
+                <!-- 🔽 Invoice Validation Check Buttons -->
+                <div class="check-buttons" style="margin-top:6px;">
+
+                  <!-- Change 1 -->
+                  <!-- <button class="check-btn featured" onclick=openAccountModal"({{ invoice.id }})">Account</button> -->
+                  
+                  <button class="check-btn featured account-btn"
+                          data-invoice-id="{{ invoice.id }}"
+                          onclick="openAccountModal({{ invoice.id }})">
+                      Account
+                  </button>
+
+                  <button id="invoice-btn-{{ invoice.id }}"
+                      class="check-btn featured invoice-btn"
+                      data-invoice-id="{{ invoice.id }}"
+                      onclick="openInvoiceModal({{ invoice.id }})"
+                      title="Invoice Check">
+                    Invoice
+                  </button>
+                  
+                  <!-- <button class="check-btn featured" onclick="openGstModal({{ invoice.id }})">GST</button> -->
+                  <button
+                    class="check-btn featured gst-btn"
+                    data-invoice-id="{{ invoice.id }}"
+                    onclick="openGstModal({{ invoice.id }})">
+                    GST
+                  </button>
+                  
+                  <button class="check-btn featured" onclick="openTaxModal({{ invoice.id }})">TAX</button>
+                
+                  <button class="check-btn featured" onclick="openTableModal({{ invoice.id }})">Table</button>
+
+                  <button class="check-btn featured" onclick="openEinvoiceModal({{ invoice.id }})">E-Invoice</button>
+
+                  <button class="check-btn featured" onclick="openEwayModal({{ invoice.id }})">E-Way</button>
+
+                </div>
+
+              </td>
+
+
+              <td>{{ invoice.response|default:"—" }}</td>
+              
+
+              <!-- File Column -->
+              <td>
+                <a href="{{ invoice.file_path }}" target="_blank">View</a>
+              </td>
+              
+
+              <!-- Check All column -->
+              <td style="text-align:center;">
+                <input type="checkbox" class="row-checkbox">
+              </td>
+
+
+              <!-- Actions Column -->
+              <td>
+
+                <div class="action-dropdown">
+
+                  <button class="action-dropdown-btn">Action ▾</button>
+
+                  <div class="action-dropdown-menu">
+
+
+                    <!-- APPROVED -->
+                    <form method="post" action="{% url 'update_invoice_status' invoice.id %}" style="display: inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="Approved">
+                      <button type="submit" class="action-btn good-to-account-btn">Approved</button>
+                    </form>
+                    <br>
+
+
+                    <!-- HOLD -->
+                    <form method="post" action="{% url 'update_invoice_status' invoice.id %}" style="display: inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="Hold">
+                      <button type="submit" class="action-btn hold-btn">Hold</button>
+                    </form>
+                    <br>
+
+
+                    <!-- REJECT  -->
+                    <form method="post" action="{% url 'update_invoice_status' invoice.id %}" style="display: inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="status" value="Rejected">
+                      <button type="submit" class="action-btn reject-btn">Reject</button>
+                    </form>
+
+                  </div>
+
+                </div>
+
+              </td>
+            </tr>
+
+
+            {% endfor %}
+          </tbody>
+        </table>
+
+
+        <!-- Pagination for Pending -->
+        {% if pending_invoices.paginator.num_pages > 1 %}
+
+        <div class="pagination" style="margin-top: 20px; text-align: center;">
+
+          {% if pending_invoices.has_previous %}
+            <a href="?section=pending
+            &pending_page={{ pending_invoices.previous_page_number }}
+            &vendor_prefix={{ filters.vendor_prefix }}
+            &invoice_no_prefix={{ filters.invoice_no_prefix }}
+            &from_date={{ filters.from_date }}
+            &to_date={{ filters.to_date }}
+            &amount_min={{ filters.amount_min }}
+            &amount_max={{ filters.amount_max }}
+            &status_prefix={{ filters.status_prefix }}
+            &response_prefix={{ filters.response_prefix }}
+            &file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
+          {% endif %}
+
+          <span style="margin: 0 15px; font-weight: bold;">Page {{ pending_invoices.number }} of {{ pending_invoices.paginator.num_pages }}</span>
+
+          {% if pending_invoices.has_next %}
+            <a href="?section=pending
+            &pending_page={{ pending_invoices.next_page_number }}
+            &vendor_prefix={{ filters.vendor_prefix }}
+            &invoice_no_prefix={{ filters.invoice_no_prefix }}
+            &from_date={{ filters.from_date }}
+            &to_date={{ filters.to_date }}
+            &amount_min={{ filters.amount_min }}
+            &amount_max={{ filters.amount_max }}
+            &status_prefix={{ filters.status_prefix }}
+            &response_prefix={{ filters.response_prefix }}
+            &file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
+          {% endif %}
+
+        </div>
+
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <h3>No pending invoices</h3>
+          <p>All invoices have been processed!</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+     
+    <!-- On Hold Section -->
+    <div id="hold" class="section">
+      
+      <h2 class="section-title">On Hold</h2>
+      <form id="hold-filters" method="get" action="">
+        <input type="hidden" name="section" value="hold">
+      </form>
+
+      <div style="margin-bottom: 15px;">
+        <button type="submit" form="hold-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
+        <a href="?section=hold" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
+      </div>
+    
+      <div class="invoice-table">
+        {% if hold_invoices %}
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice Value</th>
+              <th>Invoice Status</th>
+              <th>Response</th>
+              <th class="file-header">File</th>
+              <th class="actions-header">Actions</th>
+            </tr>
+            <!-- Filter Row -->
+            <tr style="background-color: #f5f5f5;">
+              <th><input form="hold-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
+              <th><input form="hold-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
+              <th style="min-width: 200px; max-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
+                    <input form="hold-filters" type="date" 
+                           name="from_date"
+                           value="{{ filters.from_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
+                    <input form="hold-filters" type="date"
+                           name="to_date"
+                           value="{{ filters.to_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                </div>
+              </th>
+              <th>
+                <input form="hold-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
+                <input form="hold-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
+              </th>
+              <th><input form="hold-filters" type="text" name="status_prefix" value="{{ filters.status_prefix }}" placeholder="Status starts with..." style="width: 100%;"></th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </tr>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in hold_invoices.object_list %}
+
+            <tr>
+              <td>{{ invoice.vendor_name }}</td>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>{{ invoice.response|default:"—" }}</td>
+
+
+              <!-- File Column -->
+              <td class="file-header">
+                <a href="{{ invoice.file_path }}" target="_blank">View</a>
+              </td>
+
+              <td>
+                <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
+              </td>
+                          
+            </tr>
+            {% endfor %}
+          </tbody> 
+
+        </table>
+
+        <!-- Pagination for Hold -->
+        {% if hold_invoices.paginator.num_pages > 1 %}
+        <div class="pagination" style="margin-top: 20px; text-align: center;">
+          {% if hold_invoices.has_previous %}
+            <a href="?section=hold&hold_page={{ hold_invoices.previous_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
+          {% endif %}
+          <span style="margin: 0 15px; font-weight: bold;">Page {{ hold_invoices.number }} of {{ hold_invoices.paginator.num_pages }}</span>
+          {% if hold_invoices.has_next %}
+            <a href="?section=hold&hold_page={{ hold_invoices.next_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <h3>No invoices on hold</h3>
+          <p>Great! All your invoices are processed.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- Rejected Section -->
+    <div id="rejected" class="section">
+      <h2 class="section-title">Rejected</h2>
+      <form id="rejected-filters" method="get" action="">
+        <input type="hidden" name="section" value="rejected">
+      </form>
+
+      <div style="margin-bottom: 15px;">
+        <button type="submit" form="rejected-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
+        <a href="?section=rejected" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
+      </div>
+
+      <div class="invoice-table">
+        {% if rejected_invoices %}
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice Value</th>
+              <th>Invoice Status</th>
+              <th>Response</th>
+              <th class="file-header">File</th>
+              <th class="actions-header">Actions</th>
+            </tr>
+            <!-- Filter Row -->
+            <tr style="background-color: #f5f5f5;">
+              <th><input form="rejected-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
+              <th><input form="rejected-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
+              <th style="min-width: 200px; max-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
+                    <input form="rejected-filters" type="date" 
+                           name="from_date"
+                           value="{{ filters.from_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
+                    <input form="rejected-filters" type="date"
+                           name="to_date"
+                           value="{{ filters.to_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                </div>
+              </th>
+              <th>
+                <input form="rejected-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
+                <input form="rejected-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
+              </th>
+              <th><input form="rejected-filters" type="text" name="status_prefix" value="{{ filters.status_prefix }}" placeholder="Status starts with..." style="width: 100%;"></th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </tr>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in rejected_invoices.object_list %}
+
+            <tr>
+
+              <td>{{ invoice.vendor_name }}</td>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>{{ invoice.response|default:"—" }}</td>
+
+              <!-- File Column -->
+              <td class="file-header">
+                <a href="{{ invoice.file_path }}" target="_blank">View</a>
+              </td>
+
+              <td>
+                <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
+              </td>
+
+            </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+
+        <!-- Pagination for Rejected -->
+        {% if rejected_invoices.paginator.num_pages > 1 %}
+        <div class="pagination" style="margin-top: 20px; text-align: center;">
+          {% if rejected_invoices.has_previous %}
+            <a href="?section=rejected&rejected_page={{ rejected_invoices.previous_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
+          {% endif %}
+          <span style="margin: 0 15px; font-weight: bold;">Page {{ rejected_invoices.number }} of {{ rejected_invoices.paginator.num_pages }}</span>
+          {% if rejected_invoices.has_next %}
+            <a href="?section=rejected&rejected_page={{ rejected_invoices.next_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <h3>No rejected invoices</h3>
+          <p>All invoices are in good standing!</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+
+    <!-- Approved Section -->
+    <div id="approved" class="section">
+      <form id="approved-filters" method="get" action="">
+        <input type="hidden" name="section" value="approved">
+      </form>
+
+      <div style="margin-bottom: 15px;">
+        <button type="submit" form="approved-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
+        <a href="?section=approved" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
+      </div>
+
+      <div class="invoice-table">
+        {% if approved_invoices %}
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice Value</th>
+              <th>Invoice Status</th>
+              <th>Response</th>
+              <th>File</th>
+              <th style="text-align:center;">
+                Check All <br>
+                <input type="checkbox" id="check-all">
+              </th>
+              <th class="actions-header">Actions</th>
+            </tr>
+            <!-- Filter Row -->
+            <tr style="background-color: #f5f5f5;">
+              <th><input form="approved-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
+              <th><input form="approved-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
+              <th style="min-width: 200px; max-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
+                    <input form="approved-filters" type="date" 
+                           name="from_date"
+                           value="{{ filters.from_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
+                    <input form="approved-filters" type="date"
+                           name="to_date"
+                           value="{{ filters.to_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                </div>
+              </th>
+              <th>
+                <input form="approved-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
+                <input form="approved-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
+              </th>
+              <th><input form="approved-filters" type="text" name="status_prefix" value="{{ filters.status_prefix }}" placeholder="Status starts with..." style="width: 100%;"></th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in approved_invoices.object_list %}
+            <tr>
+              <td>{{ invoice.vendor_name }}</td>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>{{ invoice.response|default:"—" }}</td>
+
+              <!-- File Column -->
+              <td>
+                <a href="{{ invoice.file_path }}" target="_blank">View</a>
+              </td>
+
+              <!-- Check All column -->
+              <td style="text-align:center;">
+                <input type="checkbox" class="row-checkbox">
+              </td>
+
+              <!-- Actions Column -->
+              <td>
+              <!--
+                <form method="post" action="{% url 'update_invoice_status' invoice.id %}" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="Accounted">
+                  <button type="submit" class="action-btn good-to-account-btn">Mark as Accounted</button>
+                </form>
+              -->
+                
+                <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <!-- Pagination for Approved -->
+        {% if approved_invoices.paginator.num_pages > 1 %}
+        <div class="pagination" style="margin-top: 20px; text-align: center;">
+          {% if approved_invoices.has_previous %}
+            <a href="?section=approved&approved_page={{ approved_invoices.previous_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
+          {% endif %}
+          <span style="margin: 0 15px; font-weight: bold;">Page {{ approved_invoices.number }} of {{ approved_invoices.paginator.num_pages }}</span>
+          {% if approved_invoices.has_next %}
+            <a href="?section=approved&approved_page={{ approved_invoices.next_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <h3>No approved invoices yet</h3>
+          <p>Invoices will appear here once they are approved.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+
+    <!-- Accounted Section -->
+    <div id="accounted" class="section">
+      <form id="accounted-filters" method="get" action="">
+        <input type="hidden" name="section" value="accounted">
+      </form>
+
+      <div style="margin-bottom: 15px;">
+        <button type="submit" form="accounted-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
+        <a href="?section=accounted" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
+      </div>
+       
+      <div class="invoice-table">
+        {% if accounted_invoices %}
+        <table>
+
+          <thead>
+            <tr>
+              <th>Vendor Name</th>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice Value</th>
+              <th>Invoice Status</th>
+              <th>Response</th>
+              <th>File</th>
+              <th style="text-align:center;">
+                Check All <br>
+                <input type="checkbox" id="check-all">
+              </th>
+              <th>Actions</th>
+            </tr>
+            <!-- Filter Row -->
+            <tr style="background-color: #f5f5f5;">
+              <th><input form="accounted-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
+              <th><input form="accounted-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
+              <th style="min-width: 200px; max-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
+                    <input form="accounted-filters" type="date" 
+                           name="from_date"
+                           value="{{ filters.from_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
+                    <input form="accounted-filters" type="date"
+                           name="to_date"
+                           value="{{ filters.to_date }}"
+                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
+                  </div>
+                </div>
+              </th>
+              <th>
+                <input form="accounted-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
+                <input form="accounted-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
+              </th>
+              <th><input form="accounted-filters" type="text" name="status_prefix" value="{{ filters.status_prefix }}" placeholder="Status starts with..." style="width: 100%;"></th>
+              <th></th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for invoice in accounted_invoices.object_list %}
+            <tr>
+              <td>{{ invoice.vendor_name }}</td>
+              <td>{{ invoice.invoice_number }}</td>
+              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
+              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>{{ invoice.response|default:"—" }}</td>
+
+
+              <!-- File Column -->
+              <td>
+                <a href="{{ invoice.file_path }}" target="_blank">View</a>
+              </td>
+              
+
+              <!-- Check All column -->
+              <td style="text-align:center;">
+                <input type="checkbox" class="row-checkbox">
+              </td>
+
+
+              <!-- Actions Column (summary must be here)-->
+              <td>
+                <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
+              </td>
+
+            </tr>
+
+            {% endfor %}
+          </tbody>
+
+        </table>
+
+        <!-- Pagination Concept for Accounted Section -->
+
+        {% if accounted_invoices.paginator.num_pages > 1 %}
+        <div class="pagination" style="margin-top: 20px; text-align: center;">
+          {% if accounted_invoices.has_previous %}
+            <a href="?section=accounted&accounted_page={{ accounted_invoices.previous_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
+          {% endif %}
+          <span style="margin: 0 15px; font-weight: bold;">Page {{ accounted_invoices.number }} of {{ accounted_invoices.paginator.num_pages }}</span>
+          {% if accounted_invoices.has_next %}
+            <a href="?section=accounted&accounted_page={{ accounted_invoices.next_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <h3>No accounted invoices yet</h3>
+          <p>Invoices will appear here once they are approved.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    
+    <!-- E-Invoice Register Section -->
+    <div id="einvoiceregister" class="section">
+
+      <div class="section-header">
+        <h3>🧾 E-Invoice Register</h3>
+      </div>
+
+      <div class="einvoice-wrapper">
+        <div class="upload-card">
+
+            <h4>Upload E-Invoice File</h4>
+
+            <form>
+                <div class="upload-box">
+                    <input type="file" id="einvoiceFile" class="file-input">
+                </div>
+
+                <button type="button" class="upload-btn">
+                    Upload File
+                </button>
+            </form>
+
+            <p class="upload-note">
+                Supported formats: JSON / PDF / Excel (Details to be confirmed)
+            </p>
+
+        </div>
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+
+  <script>
+    // Check All functionality 
+    document.addEventListener("DOMContentLoaded", function () {
+      const checkAll = document.getElementById("check-all");
+
+      if (checkAll) {
+        checkAll.addEventListener("change", function () {
+          document.querySelectorAll(".row-checkbox").forEach(cb => {
+            cb.checked = checkAll.checked;
+          });
+        });
+      }
+    });
+  </script>
+  
+
+
+<script>
+/* ---------------------------- SECTION SWITCHING (NAV) ---------------------------- */
+
+function showSection(id, el) 
+{
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ---------------------------- OPEN DEFAULT SECTION ON LOAD ---------------------------- */
+
+window.addEventListener('load', function () 
+{
+  const section = 'upload';
+
+  const btn = document.querySelector(
+    `.nav-btn[onclick="showSection('${section}', this)"]`
+  );
+
+  if (btn) {
+    showSection(section, btn);
+  }
+});
+
+/* ---------------------------- CHECK ALL FUNCTIONALITY ---------------------------- */
+
+document.addEventListener("DOMContentLoaded", function () 
+{
+  const checkAll = document.getElementById("check-all");
+
+  if (checkAll) {
+    checkAll.addEventListener("change", function () {
+      document.querySelectorAll(".row-checkbox").forEach(cb => {
+        cb.checked = checkAll.checked;
+      });
+    });
+  }
+});
+
+
+/* ---------------------------- ACTION DROPDOWN (CLICK TO TOGGLE) ---------------------------- */
+
+document.addEventListener("click", function (e) 
+{
+
+  const clickedBtn = e.target.closest(".action-dropdown-btn");
+  const clickedDropdown = clickedBtn
+    ? clickedBtn.closest(".action-dropdown")
+    : null;
+
+  // Close all dropdowns first
+  document.querySelectorAll(".action-dropdown").forEach(dd => {
+    if (dd !== clickedDropdown) {
+      dd.classList.remove("open");
+    }
+  });
+
+  // Toggle clicked dropdown
+  if (clickedDropdown) {
+    clickedDropdown.classList.toggle("open");
+  }
+});
+
+</script>
+
+
+
+<!-- ======================= INVOICE MODAL Javascript ======================= -->
+<script>
+window.openInvoiceModal = function(invoiceId) {
+  console.log("Invoice clicked:", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => {
+      console.log("Response status:", res.status);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      console.log("API Response Data:", data);
+
+      /* ================= Invoice Calculation 1 ================= */
+      
+      const ic1 = data.invoice_calculation_1 || {};
+      console.log("IC1:", ic1);
+      document.getElementById("basic_ocr").innerText = ic1.ocr_amount ?? "-";
+      document.getElementById("basic_table").innerText = ic1.table_sum ?? "-";
+      document.getElementById("basic_status").innerText = ic1.status ?? "-";
+      
+
+      /* ================= Invoice Calculation 2 ================= */
+      
+      const ic2 = data.invoice_calculation_2 || {};
+      console.log("IC2:", ic2);
+      document.getElementById("total_table").innerText = ic2.table_sum ?? "-";
+      document.getElementById("tax_ocr").innerText = ic2.ocr_tax ?? "-";
+      document.getElementById("total_ocr").innerText = ic2.ocr_total ?? "-";
+      document.getElementById("total_status").innerText = ic2.status ?? "-";
+      
+
+      /* ================= Complete Invoice Check ================= */
+      const accountCheck = data.account_check || {};
+      console.log("Account Check:", accountCheck);
+
+      document.getElementById("gst_name").innerText =
+        accountCheck.customer_name?.gst_portal || "-";
+      document.getElementById("inv_name").innerText =
+        accountCheck.customer_name?.invoice_data || "-";
+      document.getElementById("name_status").innerText =
+        accountCheck.customer_name?.status || "-";
+
+      document.getElementById("gst_address").innerText =
+        accountCheck.customer_address?.gst_portal || "-";
+      document.getElementById("inv_address").innerText =
+        accountCheck.customer_address?.invoice_data || "-";
+      document.getElementById("address_status").innerText =
+        accountCheck.customer_address?.status || "-";
+
+      /* ================= Other Parameter Check ================= */
+      const otherParams = data.other_parameter_check || {};
+      console.log("Other Params:", otherParams);
+
+      function setOtherParam(key, statusId, dataId) {
+        const row = otherParams[key] || {};
+        if (document.getElementById(statusId)) {
+          document.getElementById(statusId).innerText = row.status ?? "-";
+        }
+        if (document.getElementById(dataId)) {
+          // Try multiple possible data sources
+          const dataValue = row.invoice_data || row.gst_portal || row.data || "-";
+          document.getElementById(dataId).innerText = dataValue;
+        }
+      }
+
+      setOtherParam("invoice_date", "op_invoice_date_status", "op_invoice_date_data");
+      setOtherParam("invoice_number", "op_invoice_number_status", "op_invoice_number_data");
+      setOtherParam("previous_year", "op_previous_year_status", "op_previous_year_data");
+      setOtherParam("gst_mentioned", "op_gst_mentioned_status", "op_gst_mentioned_data");
+      setOtherParam("valid_invoice", "op_valid_invoice_status", "op_valid_invoice_data");
+
+
+      /* ================= SHOW MODAL (IMPORTANT) ================= */
+      document.getElementById("invoiceModal").classList.add("is-open");
+      console.log("Modal opened successfully");
+    })
+    .catch(err => {
+      console.error("Invoice modal error:", err);
+      console.error("Error stack:", err.stack);
+      alert("Error loading invoice data. Check browser console for details");
+    });
+};
+
+function closeInvoiceModal() {
+  document.getElementById("invoiceModal").classList.remove("is-open");
+}
+
+
+
+// ================= E-INVOICE MODAL Javascript ================= 
+window.openEinvoiceModal = function(invoiceId) {
+  console.log("E-Invoice button clicked:", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+      const einvoice = data.result?.CHECKS?.['e-invoice_data'] || {};
+      
+      document.getElementById("einv_status").innerText = einvoice.status || "-";
+      document.getElementById("einv_reason").innerText = einvoice.reason || "-";
+      document.getElementById("einv_liability").innerText = einvoice.einvoice_liability || "-";
+      
+      document.getElementById("einvoiceModal").classList.add("is-open");
+    })
+    .catch(err => {
+      console.error("E-Invoice modal error:", err);
+      alert("Error loading E-Invoice data");
+    });
+};
+
+function closeEinvoiceModal() {
+  document.getElementById("einvoiceModal").classList.remove("is-open");
+}
+
+
+
+// ================= E-WAY BILL MODAL Javascript ================= 
+window.openEwayModal = function(invoiceId) {
+  console.log("E-Way button clicked:", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+      const eway = data.result?.CHECKS?.eway_bill_data || {};
+      
+      document.getElementById("eway_status").innerText = eway.status || "-";
+      document.getElementById("eway_invoice_no").innerText = eway.Invoice_No?.invoice || "-";
+      document.getElementById("eway_amount").innerText = eway.Total_Amount?.invoice || "-";
+      document.getElementById("eway_vendor_gst").innerText = eway.Vendor_Gst?.invoice || "-";
+      document.getElementById("eway_reason").innerText = eway.reason || "-";
+      
+      document.getElementById("ewayModal").classList.add("is-open");
+    })
+    .catch(err => {
+      console.error("E-Way modal error:", err);
+      alert("Error loading E-Way data");
+    });
+};
+
+function closeEwayModal() {
+  document.getElementById("ewayModal").classList.remove("is-open");
+}
+
+
+
+/* ================= Javascript for GST MODAL ================= */
+window.openGstModal = function(invoiceId) {
+  console.log("GST button clicked:", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(async res => {
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text.slice(0, 300)}`);
+      }
+      return res.json();
+    })
+    .then(data => { 
+      const taxCheck = data.result?.CHECKS?.tax_check || {};
+      console.log("Tax Check Data:", taxCheck);
+
+      /* ================= VENDOR GST VALIDATION ================= */
+      document.getElementById("gst_valid_status").innerText = 
+        taxCheck.Vendor_Gst_Valid?.status || "-";
+      
+      document.getElementById("gst_active_status").innerText = 
+        taxCheck.Vendor_Gst_Active?.status || "-";
+
+      /* ================= TAX PAYER DETAILS ================= */
+      document.getElementById("tax_payer_type").innerText = 
+        taxCheck.Vendor_TaxPayer_type?.status || "-";
+      
+      document.getElementById("filing_frequency").innerText = 
+        taxCheck.Vendor_Taxfiliging_Frequency?.status || "-";
+
+      /* ================= GSTR 3B FILING STATUS ================= */
+      // Extract filing status from data_from_gst (can be array/string/object)
+      const rawFilingStatus = data.result?.CHECKS?.data_from_gst?.['Filing Status'];
+      const filingStatus = Array.isArray(rawFilingStatus) ? rawFilingStatus : [];
+      
+      // Get GSTR3B filings - last 3 periods
+      const gstr3b = filingStatus.filter(f => f?.rtntype === 'GSTR3B').reverse();
+      document.getElementById("gstr3b_p1").innerText = gstr3b[0]?.status || "-";
+      document.getElementById("gstr3b_p2").innerText = gstr3b[1]?.status || "-";
+      document.getElementById("gstr3b_p3").innerText = gstr3b[2]?.status || "-";
+
+      /* ================= GSTR 1 FILING STATUS ================= */
+      // Get GSTR1 filings - last 3 periods
+      const gstr1 = filingStatus.filter(f => f?.rtntype === 'GSTR1').reverse();
+      document.getElementById("gstr1_p1").innerText = gstr1[0]?.status || "-";
+      document.getElementById("gstr1_p2").innerText = gstr1[1]?.status || "-";
+      document.getElementById("gstr1_p3").innerText = gstr1[2]?.status || "-";
+
+      document.getElementById("gstModal").classList.add("is-open");
+      console.log("GST Modal opened successfully");
+    })
+    .catch(err => {
+      console.error("GST modal error:", err);
+      alert("Error loading GST data. Check browser console.");
+    });
+};
+
+function closeGstModal() {
+  document.getElementById("gstModal").classList.remove("is-open");
+}
+</script>
+
+
+
+<!-- ================= ACCOUNT MODAL JAVASCRIPT ================= -->
+<script>
+window.openAccountModal = function(invoiceId) {
+  console.log("Account button clicked:", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+      const accountFull = data.account_check_full || {};
+      console.log("Account Check Full Data:", accountFull);
+
+      // Helper function to set cell value (empty string if blank)
+      function setValue(elementId, value) {
+        const elem = document.getElementById(elementId);
+        if (elem) {
+          elem.innerText = value || "";
+        }
+      }
+
+      // Complete Invoice
+      setValue("acc_complete_invoice_gst", accountFull.Complete_Invoice?.gst_portal);
+      setValue("acc_complete_invoice_inv", accountFull.Complete_Invoice?.invoice_data);
+      setValue("acc_complete_invoice_status", accountFull.Complete_Invoice?.status);
+
+      // Customer Address
+      setValue("acc_customer_address_gst", accountFull.Customer_Adress?.gst_portal);
+      setValue("acc_customer_address_inv", accountFull.Customer_Adress?.invoice_data);
+      setValue("acc_customer_address_status", accountFull.Customer_Adress?.status);
+
+      // Customer Name
+      setValue("acc_customer_name_gst", accountFull.Customer_Name?.gst_portal);
+      setValue("acc_customer_name_inv", accountFull.Customer_Name?.invoice_data);
+      setValue("acc_customer_name_status", accountFull.Customer_Name?.status);
+
+      // Invoice Blocked Credit
+      setValue("acc_blocked_credit_gst", accountFull.Invoice_Blocked_Credit?.gst_portal);
+      setValue("acc_blocked_credit_inv", accountFull.Invoice_Blocked_Credit?.invoice_data);
+      setValue("acc_blocked_credit_status", accountFull.Invoice_Blocked_Credit?.status);
+
+      // Invoice Date
+      setValue("acc_invoice_date_gst", accountFull.Invoice_Date?.gst_portal);
+      setValue("acc_invoice_date_inv", accountFull.Invoice_Date?.invoice_data);
+      setValue("acc_invoice_date_status", accountFull.Invoice_Date?.status);
+
+      // Invoice Number
+      setValue("acc_invoice_number_gst", accountFull.Invoice_Number?.gst_portal);
+      setValue("acc_invoice_number_inv", accountFull.Invoice_Number?.invoice_data);
+      setValue("acc_invoice_number_status", accountFull.Invoice_Number?.status);
+
+      // RCM Services
+      setValue("acc_rcm_services_gst", accountFull["Invoice_RCM-Services"]?.gst_portal);
+      setValue("acc_rcm_services_inv", accountFull["Invoice_RCM-Services"]?.invoice_data);
+      setValue("acc_rcm_services_status", accountFull["Invoice_RCM-Services"]?.status);
+
+      // Previous Year
+      setValue("acc_pre_year_gst", accountFull.Pre_year?.gst_portal);
+      setValue("acc_pre_year_inv", accountFull.Pre_year?.invoice_data);
+      setValue("acc_pre_year_status", accountFull.Pre_year?.status);
+
+      // GST Number GST Charged
+      setValue("acc_gst_charged_gst", accountFull.gstnumber_gstcharged?.gst_portal);
+      setValue("acc_gst_charged_inv", accountFull.gstnumber_gstcharged?.invoice_data);
+      setValue("acc_gst_charged_status", accountFull.gstnumber_gstcharged?.status);
+
+      // Valid Invoice
+      setValue("acc_valid_invoice_gst", accountFull.valid_invoice?.gst_portal);
+      setValue("acc_valid_invoice_inv", accountFull.valid_invoice?.invoice_data);
+      setValue("acc_valid_invoice_status", accountFull.valid_invoice?.status);
+
+      document.getElementById("accountModal").classList.add("is-open");
+
+      // call the color logic here 
+      updateAccountButtonColor();
+
+      console.log("Account Modal opened successfully");
+    })
+    .catch(err => {
+      console.error("Account modal error:", err);
+      //alert("Error loading Account data. Check browser console.");
+    });
+};
+
+function closeAccountModal() {
+  document.getElementById("accountModal").classList.remove("is-open");
+}
+</script>
+
+
+
+<!-- TAX MODAL JAVASCRIPT -->
+<script>
+window.openTaxModal = function(invoiceId) 
+{
+
+  console.log("Tax clicked, invoice =", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+
+      /* ================= PAN CHECK ================= */
+      const pan = data.pan_check || {};
+
+      document.getElementById("pan_206ab_status").innerText =
+        pan.vendor_206ab ?? "-";
+
+      document.getElementById("pan_active_status").innerText =
+        pan.vendor_pan_active ?? "-";
+
+      document.getElementById("pan_aadhar_status").innerText =
+        pan.vendor_pan_aadhar_linked ?? "-";
+
+
+      /* ================= TAX CHECK ================= */
+      const tax = data.tax_check || {};
+
+      document.getElementById("tax_rate_invoice").innerText =
+        tax.tax_rate ?? "-";
+
+      document.getElementById("tax_type_invoice").innerText =
+        tax.tax_type ?? "-";
+
+      document.getElementById("block_credit_invoice").innerText =
+        tax.input_credit ?? "-";
+
+      document.getElementById("rcm_invoice").innerText =
+        tax.rcm_fc ?? "-";
+
+
+      document.getElementById("taxModal").classList.add("is-open");
+    })
+    .catch(err => {
+      console.error("Error loading tax data:", err);
+    });
+};
+
+window.closeTaxModal = function() {
+  document.getElementById("taxModal").classList.remove("is-open");
+};
+</script>
+
+
+<!-- TABLE MODAL Javascript -->
+<script>
+window.openTableModal = function(invoiceId) {
+
+  console.log("Table clicked, invoice =", invoiceId);
+
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+
+      const tableItems = data.table_check || [];
+      console.log("Table Check Data:", tableItems);
+
+      const tbody = document.getElementById("table_check_body");
+      tbody.innerHTML = ""; // clear old rows
+
+      if (tableItems.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="10" style="text-align:center;">No table data available</td>`;
+        tbody.appendChild(tr);
+      }
+
+      tableItems.forEach(item => {
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${item.item_description ?? "-"}</td>
+          <td>${item.product_code ?? "-"}</td>
+          <td>${item.item_quantity ?? "-"}</td>
+          <td>${item.unit_price ?? "-"}</td>
+          <td>${item.qty_unitprice ?? "-"}</td>
+          <td>${item.tax_rate ?? "-"}</td>
+          <td>${item.amount ?? "-"}</td>
+          <td>${item["qty_unit+rate_qty_unit"] ?? "-"}</td>
+          <td>${item["qty_unit+2_rate_qty_unit"] ?? "-"}</td>
+          <td>${item.check1 ?? "-"}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      /* ================= Invoice Calculation 1 ================= */
+      const ic1 = data.invoice_calculation_1 || {};
+      document.getElementById("basic_ocr").innerText = ic1.ocr_amount ?? "-";
+      document.getElementById("basic_table").innerText = ic1.table_sum ?? "-";
+      document.getElementById("basic_status").innerText = ic1.status ?? "-";
+
+      /* ================= Invoice Calculation 2 ================= */
+      const ic2 = data.invoice_calculation_2 || {};
+      document.getElementById("total_table").innerText = ic2.table_sum ?? "-";
+      document.getElementById("tax_ocr").innerText = ic2.ocr_tax ?? "-";
+      document.getElementById("total_ocr").innerText = ic2.ocr_total ?? "-";
+      document.getElementById("total_status").innerText = ic2.status ?? "-";
+
+      // OPEN MODAL 
+      document.getElementById("tableModal").classList.add("is-open");      // used flex to make it scrollable when content is large 
+    })
+    .catch(err => {
+      console.error("Error loading table data:", err);
+      alert("Error loading table data");
+    });
+};
+
+function closeTableModal() {
+  document.getElementById("tableModal").classList.remove("is-open");
+}
+</script>
+
+
+
+<!-- ================= INVOICE MODAL (GLOBAL) ================= -->
+<!-- INVOICE MODAL HTML -->
+
+<div id="invoiceModal" class="modal">
+  <div class="modal-content">
+
+    <span class="close" onclick="closeInvoiceModal()">×</span>
+
+    
+    <!-- Only keep Complete Invoice Check + Other Parameter Check -->
+  
+    <!-- ================= COMPLETE INVOICE CHECK ================= -->
+    <br>
+    <h1>Complete Invoice Check</h1>
+    <br>
+    <h2>Name & Address Check</h2>
+    <br>
+
+    <table class="modal-table">
+      <tr>
+        <th>Parameter</th>
+        <th>GST Portal</th>
+        <th>Invoice Data</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td>Name</td>
+        <td id="gst_name"></td>
+        <td id="inv_name"></td>
+        <td id="name_status"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Address</td>
+        <td id= "gst_address"></td>
+        <td id="inv_address"></td>
+        <td id="address_status"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+    </table>
+    
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+
+    <br>
+    <br>
+    
+
+    <!-- ==================== OTHER PARAMETER CHECK ================= -->
+    <h2>Other Parameter Check</h2>
+    <br>
+
+    <table class="modal-table">
+
+      <colgroup>
+        <col style="width: 26%;">
+        <col style="width: 12%;">
+        <col style="width: 62%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>Status</th>
+        <th>Data</th>
+      </tr>
+
+      <tr>
+        <td>Invoice Date</td>
+        <td id="op_invoice_date_status"></td>  <!-- ✅ Changed from "inv_date_satatus" -->
+        <td id="op_invoice_date_data"></td>     <!-- ✅ Changed from "inv_date" -->
+      </tr>
+
+      <tr>
+        <td>Invoice No.</td>
+        <td id="op_invoice_number_status"></td> <!-- ✅ Changed from "inv_no_status" -->
+        <td id="op_invoice_number_data"></td>   <!-- ✅ Changed from "inv_no" -->
+      </tr>
+
+      <tr>
+        <td>Previous Year</td>
+        <td id="op_previous_year_status"></td>  <!-- ✅ Changed from "prev_year_status" -->
+        <td id="op_previous_year_data"></td>    <!-- ✅ Changed from "prev_year" -->
+      </tr>
+
+      <tr>
+        <td>GST No Mentioned?(only if GST is Charged)</td>
+        <td id="op_gst_mentioned_status"></td>  <!-- ✅ Changed from "gst_mention_status" -->
+        <td id="op_gst_mentioned_data"></td>    <!-- ✅ Changed from "gst_no" -->
+      </tr>
+
+      <tr>
+        <td>Valid Invoice</td>
+        <td id="op_valid_invoice_status"></td>  <!-- ✅ Changed from "valid_invoice_status" -->
+        <td id="op_valid_invoice_data"></td>    <!-- ✅ Changed from "valid_invoice_desc" -->
+      </tr>
+    </table>
+
+
+  </div>
+</div>
+
+
+<!-- ================= GST MODAL HTML ================= -->
+<div id="gstModal" class="modal">
+
+  <div class="modal-content">
+
+    <span class="close" onclick="closeGstModal()">x</span>
+
+    <br>
+
+    <h2>Valid Vendor Check</h2>
+    <br>
+
+    <!-- GST content will come here in next steps -->
+     <table class="modal-table">
+
+      <colgroup>
+        <col style="width: 40%;">
+        <col style="width: 30%;">
+        <col style="width: 30%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td><b>GST No. of Vendor Valid as per GSTN</b></td>
+        <td id="gst_valid_status"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>GST No. of Vendor Active on GSTN</b></td>
+        <td id="gst_active_status"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Vendor Tax Payer Type</b></td>
+        <td id="tax_payer_type"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Vendor Tax Payer - Filing Frequency</b></td>
+        <td id=filing_frequency>-</td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <!-- ===== GSTR 3B ===== -->
+      <tr class="sub-section-header">
+        <td colspan="3">Vendor GSTR 3B Filing Status</td>
+      </tr>
+
+      <tr>
+        <td><b>Previous Period (period 1) GSTR 3B</b></td>
+        <td id="gstr3b_p1"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Period Prior to Period 1 (period 2) GSTR 3B</b></td>
+        <td id="gstr3b_p2"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Period Prior to Period 2 (period 3) GSTR 3B</b></td>
+        <td id="gstr3b_p3"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <!-- ===== GSTR 1 ===== -->
+      <tr class="sub-section-header">
+        <td colspan="3">Vendor GSTR 1 Filing Status</td>
+      </tr>
+
+      <tr>
+        <td><b>Previous Period (period 1) GSTR 1</b></td> 
+        <td id="gstr1_p1"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Period Prior to Period 1 (period 2) GSTR 1</b></td>
+        <td id="gstr1_p2"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td><b>Period Prior to Period 2 (period 3) GSTR 1</b></td>
+        <td id="gstr1_p3"></td>
+        <td>
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+    </table>
+
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+
+  </div>
+</div>
+
+  
+
+<!-- ================= HTML for TAX MODAL ================= --> 
+<div id="taxModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeTaxModal()">×</span>
+    <br>
+    
+    <!-- Pan Check started from here-->
+    <h1>Pan Check</h1>
+    <br>
+
+    <table class="modal-table">
+      <colgroup>
+        <col style="width: 40%;">
+        <col style="width: 30%;">
+        <col style="width: 30%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td>Vendor Defaulter u/s 206AB</td>
+        <td id="pan_206ab_status">-</td>
+        <td><input class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+
+      <tr>
+        <td>Vendor PAN Active</td>
+        <td id="pan_active_status">-</td>
+        <td><input class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+
+      <tr>
+        <td>Vendor Aadhaar & PAN Linked</td>
+        <td id="pan_aadhar_status">-</td>
+        <td><input class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+    </table>
+
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+
+    <br><br>
+
+
+    <h1>Tax Check</h1>
+    <br>
+
+    <table class="modal-table">
+      <colgroup>
+        <col style="width: 40%;">
+        <col style="width: 30%;">
+        <col style="width: 30%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>Status / Value</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td>Tax Rate</td>
+        <td id="tax_rate_invoice">-</td>
+        <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+
+      <tr>
+        <td>Tax Type</td>
+        <td id="tax_type_invoice">-</td>
+        <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+
+      <tr>
+        <td>Block Credit / Input Credit</td>
+        <td id="block_credit_invoice">-</td>
+        <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+
+      <tr>
+        <td>RCM / Forward Charge</td>
+        <td id="rcm_invoice">-</td>
+        <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
+      </tr>
+    </table>
+
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- ================ E-INVOICE MODAL HTML================ -->
+<div id="einvoiceModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeEinvoiceModal()">×</span>
+    <br>
+    <h1>E-Invoice Validation</h1>
+    <br>
+    
+    <div style="text-align: center; padding: 40px 20px;">
+      <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+      <h2 style="color: #f59e0b; margin-bottom: 16px;">Coming Soon</h2>
+      <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+        E-Invoice validation feature is currently under development.<br>
+        This will include liability checks, IRN validation, and portal verification.
+      </p>
+
+      <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 8px; text-align: left;">
+        <h3 style="color: #92400e; margin-bottom: 10px;">Available Data:</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Status:</td>
+            <td style="padding: 8px;" id="einv_status">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Reason:</td>
+            <td style="padding: 8px;" id="einv_reason">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Liability:</td>
+            <td style="padding: 8px;" id="einv_liability">-</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ================= E-WAY BILL MODAL HTML ================= -->
+<div id="ewayModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeEwayModal()">×</span>
+    <br>
+    <h1>E-Way Bill Validation</h1>
+    <br>
+    
+    <div style="text-align: center; padding: 40px 20px;">
+      <div style="font-size: 48px; margin-bottom: 20px;">🚚</div>
+      <h2 style="color: #f59e0b; margin-bottom: 16px;">Coming Soon</h2>
+      <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
+        E-Way Bill validation feature is currently under development.<br>
+        This will include distance validation, vehicle tracking, and compliance checks.
+      </p>
+      
+      <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 8px; text-align: left;">
+        <h3 style="color: #92400e; margin-bottom: 10px;">Available Data:</h3>
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Status:</td>
+            <td style="padding: 8px;" id="eway_status">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Invoice No:</td>
+            <td style="padding: 8px;" id="eway_invoice_no">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Amount:</td>
+            <td style="padding: 8px;" id="eway_amount">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Vendor GST:</td>
+            <td style="padding: 8px;" id="eway_vendor_gst">-</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">Reason:</td>
+            <td style="padding: 8px;" id="eway_reason">-</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- TABLE CHECK MODAL -->
+<div id="tableModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeTableModal()">×</span>
+
+    <h1>Table Check</h1>
+    <br>
+
+    <table class="modal-table">
+      <thead>
+        <tr>
+          <th>Item Description</th>
+          <th>Product Code</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Qty × Unit Price</th>
+          <th>Tax Rate (%)</th>
+          <th>Amount</th>
+          <!-- <th>Qty + Tax</th> -->
+          <th>Qty * Unit Price + Tax</th>
+          <!-- <th>Qty + 2×Tax</th> -->
+          <th>Qty * Unit price + 2*Tax</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody id="table_check_body">
+        <!-- rows will be injected dynamically -->
+      </tbody>
+    </table>
+
+    <!-- Move Invoice Calculation 1 & 2 here (below table check)-->
+    <br><br>
+
+    <h1>Invoice Calculation</h1>
+    <br>
+
+    <h2>Invoice Calculation 1</h2>
+    <br>
+    <table class="modal-table">
+      <tr>
+        <th>Parameter</th>
+        <th>OCR Captured Amount</th>
+        <th>Table Sum of Item Level</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Basic Amount</td>
+        <td id="basic_ocr"></td>
+        <td id="basic_table"></td>
+        <td id="basic_status"></td>
+      </tr>
+    </table>
+
+    <br><br>
+    
+    <h2>Invoice Calculation 2</h2>
+    <br>
+    <table class="modal-table">
+      <colgroup>
+        <col style="width: 14%;">
+        <col style="width: 20%;">
+        <col style="width: 14%;">
+        <col style="width: 18%;">
+        <col style="width: 10%;">
+        <col style="width: 24%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>Table Sum of Item Level</th>
+        <th>OCR Captured Tax</th>
+        <th>OCR Captured Total Amount</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td>Total Amount</td>
+        <td id="total_table"></td>
+        <td id="tax_ocr"></td>
+        <td id="total_ocr"></td>
+        <td id="total_status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+    </table>
+
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Change 2 for Account Button-->
+<!-- ================= ACCOUNT CHECK MODAL ================= -->
+<div id="accountModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeAccountModal()">×</span>
+    <br>
+    <h1>Account Check</h1>
+    <br>
+
+    <table class="modal-table">
+      <colgroup>
+        <col style="width: 22%;">
+        <col style="width: 22%;">
+        <col style="width: 22%;">
+        <col style="width: 12%;">
+        <col style="width: 22%;">
+      </colgroup>
+
+      <tr>
+        <th>Parameter</th>
+        <th>GST Portal</th>
+        <th>Invoice Data</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+
+      <tr>
+        <td>Complete Invoice</td>
+        <td id="acc_complete_invoice_gst"></td>
+        <td id="acc_complete_invoice_inv"></td>
+        <td id="acc_complete_invoice_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Customer Address</td>
+        <td id="acc_customer_address_gst"></td>
+        <td id="acc_customer_address_inv"></td>
+        <td id="acc_customer_address_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Customer Name</td>
+        <td id="acc_customer_name_gst"></td>
+        <td id="acc_customer_name_inv"></td>
+        <td id="acc_customer_name_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Invoice Blocked Credit</td>
+        <td id="acc_blocked_credit_gst"></td>
+        <td id="acc_blocked_credit_inv"></td>
+        <td id="acc_blocked_credit_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Invoice Date</td>
+        <td id="acc_invoice_date_gst"></td>
+        <td id="acc_invoice_date_inv"></td>
+        <td id="acc_invoice_date_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Invoice Number</td>
+        <td id="acc_invoice_number_gst"></td>
+        <td id="acc_invoice_number_inv"></td>
+        <td id="acc_invoice_number_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Invoice RCM Services</td>
+        <td id="acc_rcm_services_gst"></td>
+        <td id="acc_rcm_services_inv"></td>
+        <td id="acc_rcm_services_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Previous Year</td>
+        <td id="acc_pre_year_gst"></td>
+        <td id="acc_pre_year_inv"></td>
+        <td id="acc_pre_year_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>GST Number GST Charged</td>
+        <td id="acc_gst_charged_gst"></td>
+        <td id="acc_gst_charged_inv"></td>
+        <td id="acc_gst_charged_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+
+      <tr>
+        <td>Valid Invoice</td>
+        <td id="acc_valid_invoice_gst"></td>
+        <td id="acc_valid_invoice_inv"></td>
+        <td id="acc_valid_invoice_status" class="account-status"></td>
+        <td class="remark-cell">
+          <input type="text" class="remark-input" placeholder="Enter remark...">
+        </td>
+      </tr>
+    </table>
+
+    <div class="remark-action-bar">
+      <button class="save-remark-btn">Save Remark</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Will change logic in future if needed currently strong rules is there like to get green status 10/10 should be there
+ then if >= 8 then yellow else red , if in future have to decrease the numnber of counts to change the rule then will change
+ in the future currently have set strong counts to change the colour -->
+ 
+<script>
+function updateAllAccountButtons(){
+
+    const buttons = document.querySelectorAll(".account-btn");
+
+    buttons.forEach(btn => {
+
+        const invoiceId = btn.getAttribute("data-invoice-id");
+
+        fetch(`/invoice-raw-data/${invoiceId}/`)
+        .then(res => res.json())
+        .then(data => {
+
+            const accountData = data.account_check_full || {};
+
+            let correct = 0;
+            let incorrect = 0;
+
+            Object.values(accountData).forEach(item => {
+
+                let status = (item.status || "").toLowerCase().trim();
+
+                if(status === "yes" || status === "okay" || status === "matching"){
+                    correct++;
+                }
+                else{
+                    incorrect++;
+                }
+
+            });
+
+            const total = correct + incorrect;
+
+            btn.classList.remove("account-green","account-yellow","account-red");
+
+            if(correct === total){
+                btn.classList.add("account-green");
+            }
+            else if(correct >= 8){  
+                btn.classList.add("account-yellow");
+            }
+            else{
+                btn.classList.add("account-red"); 
+            }
+
+        });
+
+    });
+
+}
+
+// button color logic for all Invoice button based on Invoice Model Checks (Complete Invoice Check + Other parameter check)
+function updateAllInvoiceButtons() {
+  const rows = document.querySelectorAll(".invoice-row");
+
+  rows.forEach(function(row){
+    const button = row.querySelector(".invoice-btn");
+    const invoiceId = row.getAttribute("data-invoice-id") || button?.getAttribute("data-invoice-id");
+
+    if(!button || !invoiceId){
+      return;
+    }
+
+    fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+    .then(data => {
+            const goodStatuses = new Set(["matching", "okay", "yes"]);
+            const badStatuses = new Set(["no", "not matched", "not matching"]);
+
+      const accountCheck = data.account_check || {};
+      const otherParams = data.other_parameter_check || {};
+
+      const statusList = [
+        accountCheck.customer_name?.status,
+        accountCheck.customer_address?.status,
+        otherParams.invoice_date?.status,
+        otherParams.invoice_number?.status,
+        otherParams.previous_year?.status,
+        otherParams.gst_mentioned?.status,
+        otherParams.valid_invoice?.status,
+      ];
+
+      const correctCount = statusList.reduce((count, status) => {
+        const normalized = (status || "").toString().trim().toLowerCase();
+        if (goodStatuses.has(normalized)) {
+          return count + 1;
+        }
+        if (badStatuses.has(normalized)) {
+          return count;
+        }
+        return count;
+      }, 0);
+
+      button.classList.remove("account-green", "account-yellow", "account-red");
+      button.style.backgroundColor = "";
+      button.style.color = "";
+
+      if(correctCount === 7){
+        button.classList.add("account-green");
+      }
+      else if(correctCount >= 5){
+        button.classList.add("account-yellow");
+      }
+      else{
+        button.classList.add("account-red");
+      }
+    })
+    .catch(() => {
+      button.classList.remove("account-green", "account-yellow", "account-red");
+      button.style.backgroundColor = "";
+      button.style.color = "";
+      button.classList.add("account-red");
+    });
+  });
+
+}
+
+/* ================= GST BUTTON COLOR LOGIC ================= */
+
+function normalizeStatus(value) {
+  return (value || "").toString().trim().toLowerCase();
+}
+
+function statusCategory(status) {
+  const s = normalizeStatus(status);
+
+  // Missing / unavailable
+  const missingSet = new Set(["", "-", "na", "n/a", "null", "none", "not available"]);
+
+  // Positive
+  const positiveSet = new Set([
+    "yes", "okay", "ok", "active", "regular", "monthly", "filed", "valid", "matched"
+  ]);
+
+  // Negative
+  const negativeSet = new Set([
+    "no", "not okay", "not ok", "invalid gst number", "invalid gstin",
+    "not fetched", "not filed", "inactive", "cancelled", "suspended",
+    "not matched", "not matching"
+  ]);
+
+  if (missingSet.has(s)) return "missing";
+  if (positiveSet.has(s)) return "positive";
+  if (negativeSet.has(s)) return "negative";
+
+  // Safe fallback for phrases
+  if (s.includes("filed") && !s.includes("not")) return "positive";
+  if (
+    s.includes("invalid") ||
+    s.includes("not ") ||
+    s.includes("no ") ||
+    s.includes("inactive") ||
+    s.includes("cancel")
+  ) {
+    return "negative";
+  }
+
+  // Unknown values treated as missing (safer than accidental positive)
+  return "missing";
+}
+
+
+// This function updates the color of all GST buttons based on multiple checks and their statuses 
+function updateAllGstButtons() {
+  const rows = document.querySelectorAll(".invoice-row");
+
+  rows.forEach((row) => {
+    const btn = row.querySelector(".gst-btn");
+    const invoiceId = row.getAttribute("data-invoice-id") || btn?.getAttribute("data-invoice-id");
+    if (!btn || !invoiceId) return;
+
+    fetch(`/invoice-raw-data/${invoiceId}/`)
+      .then((res) => res.json())
+      .then((data) => {
+        const checks = data?.result?.CHECKS || {};
+        const tax = checks.tax_check || {};
+
+        let positiveCount = 0;
+        let negativeCount = 0;
+        let missingCount = 0;
+
+        function countStatus(value) {
+          const category = statusCategory(value);
+          if (category === "positive") positiveCount++;
+          else if (category === "negative") negativeCount++;
+          else missingCount++;
+        }
+
+        // 4 fixed GST statuses shown on UI
+        countStatus(tax.Vendor_Gst_Valid?.status);            // GST valid
+        countStatus(tax.Vendor_Gst_Active?.status);           // GST active
+        countStatus(tax.Vendor_TaxPayer_type?.status);        // Tax payer type
+        countStatus(tax.Vendor_Taxfiliging_Frequency?.status);// Filing frequency
+
+        // 6 filing statuses shown on UI (3 x GSTR3B + 3 x GSTR1)
+        const rawFilingStatus = checks?.data_from_gst?.["Filing Status"];
+        const filingStatus = Array.isArray(rawFilingStatus) ? rawFilingStatus : [];
+
+        const gstr3b = filingStatus.filter((f) => f?.rtntype === "GSTR3B").reverse();
+        const gstr1 = filingStatus.filter((f) => f?.rtntype === "GSTR1").reverse();
+
+        // Same behavior as UI modal: missing rows become "-"
+        countStatus(gstr3b[0]?.status || "-");
+        countStatus(gstr3b[1]?.status || "-");
+        countStatus(gstr3b[2]?.status || "-");
+
+        countStatus(gstr1[0]?.status || "-");
+        countStatus(gstr1[1]?.status || "-");
+        countStatus(gstr1[2]?.status || "-");
+
+        // Apply your selected rules:
+        // 1) If negativeCount >= 2 -> red
+        // 2) Else if missingCount >= 4 -> red
+        // 3) Else if positiveCount >= 8 and missingCount <= 1 -> green
+        // 4) Else -> yellow
+
+        btn.classList.remove("account-green", "account-yellow", "account-red");
+
+        if (negativeCount >= 2) {
+          btn.classList.add("account-red");
+        } else if (missingCount >= 4) {
+          btn.classList.add("account-red");
+        } else if (positiveCount >= 8 && missingCount <= 1) {
+          btn.classList.add("account-green");
+        } else {
+          btn.classList.add("account-yellow");
+        }
+      })
+      .catch(() => {
+        // If API fails, keep conservative color
+        btn.classList.remove("account-green", "account-yellow", "account-red");
+        btn.classList.add("account-red");
+      });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    updateAllAccountButtons();
+    updateAllInvoiceButtons();
+    updateAllGstButtons();
+});
+
+</script>
+ 
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OCR Auth</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    .card { max-width: 420px; margin: 60px auto; padding: 32px; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+    .field { margin-bottom: 14px; display: flex; flex-direction: column; }
+    label { font-weight: 600; margin-bottom: 4px; }
+    input, select { padding: 10px; border: 1px solid #d5d9e2; border-radius: 8px; }
+    button { width: 100%; padding: 12px; border: none; background: #111827; color: #fff; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .link { text-align: center; margin-top: 14px; }
+    .messages { margin-bottom: 12px; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    {% if messages %}
+      <div class="messages">
+        {% for m in messages %}<div>{{ m }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
