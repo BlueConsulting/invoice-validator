@@ -11,7 +11,7 @@ OCR_URL = "https://ngtechocr.azurewebsites.net/process-invoice-withchecks-update
 # Parameters: file_path (str): Absolute path of the uploaded invoice PDF.
 # Returns: dict - Parsed JSON response from OCR API if successful. none - If API fails or exception occurs
 
-def call_ocr_api(file_path):
+def call_ocr_api(file_path, company_pan=None):
 
     # Open the uploaded PDF file in binary mode 
     try:
@@ -25,7 +25,9 @@ def call_ocr_api(file_path):
                 "user_id": "BC_User1",
                 "password": "1234@India",
                 "App": "WFS",
-                "pan": ""
+                #pass company PAN to API if available, else send empty string 
+                #step 1 : to get company PAN from signup form and pass to API
+                "pan": (str(company_pan).strip().upper() if company_pan else "")  
             }
             
             # Send POST request to OCR API

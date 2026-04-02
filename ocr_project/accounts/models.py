@@ -1,10 +1,28 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-# Company Details Model
+
+# ====================================================== Company Details Model =====================================================
 class CompanyDetails(models.Model):
     business_name = models.CharField(max_length=255)
     business_code = models.CharField(max_length=50)
+    
+
+    # Invoice Usage for Django Admin Dashboard Analytics
+    max_invoices = models.IntegerField(default=100)
+    
+    def total_invoices(self):
+        return self.invoices.count()
+    
+    def remaining_invoices(self):
+        return max(0, self.max_invoices - self.total_invoices())
+    
+    def usage_percentage(self):
+        if self.max_invoices <= 0:
+            return 0
+        return round((self.total_invoices() / self.max_invoices) * 100, 2)
+    
+
     constitution = models.CharField(
         max_length=50,
         choices=[
@@ -38,13 +56,15 @@ class CompanyDetails(models.Model):
     company_code = models.AutoField(primary_key=True)  # Auto-incremented unique code for the company
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # added pan field to store PAN number of the company for GST registration and compliance purposes
+    pan = models.CharField(max_length=10)
 
     
     def __str__(self):
         return f"{self.business_name} ({self.contact_person_email})"
 
 
-# Custom User Model
+# ====================================================== Custom User Model ======================================================
 class User(AbstractUser):
     company_code = models.ForeignKey(
         'CompanyDetails',  # Reference to your company model
@@ -53,14 +73,23 @@ class User(AbstractUser):
         null=True,
         blank=True
     )
-    role = models.CharField(max_length=20)  # Role (e.g., Admin, Manager, Employee)
+    
+    ROLE_CHOICES = (
+        ('APP_ADMIN', 'App Admin'),
+        ('COMPANY_ADMIN', 'Company Admin'),
+        ('PROCESSOR', 'Processor'),
+    )  
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+
     status = models.CharField(max_length=20, null=True, blank=True)
+    
 
     def __str__(self):
         return f"{self.username} ({self.role})"
 
 
-# Invoice Model 
+# ====================================================== INVOICE MODEL ======================================================
 class Invoice(models.Model):
     STATUS_CHOICES = [
         ('Standing', 'Standing'),
@@ -105,8 +134,43 @@ class Invoice(models.Model):
         return f"{self.vendor_name} - {self.invoice_number} ({self.status})"
 
 
+# ====================================================== Invoice Remarks Model =======================================================
+class InvoiceRemark(models.Model):
+    """Stores processor remarks per invoice validation section and parameter."""
 
-# GST Details Model 
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='remarks')
+    section = models.CharField(max_length=64)
+    subsection = models.CharField(max_length=128)
+    parameter_key = models.CharField(max_length=255)
+    remark = models.TextField(blank=True)
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_invoice_remarks',
+    )
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_invoice_remarks',
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        unique_together = [['invoice', 'section', 'subsection', 'parameter_key']]
+
+    def __str__(self):
+        return f"Invoice {self.invoice_id} | {self.section}/{self.subsection} | {self.parameter_key}"
+
+
+# ====================================================== GST Details Model =======================================================
 class GSTDetails(models.Model):
     """
     Model to store GST registration details for each state where company is registered.
@@ -188,3 +252,45 @@ class GSTDetails(models.Model):
     
     def __str__(self):
         return f"{self.company.business_name} - {self.state} ({self.gst_number})"
+
+
+# ====================================================== HSN Master Model ======================================================
+class HSN(models.Model):
+    hsn_code = models.CharField(max_length=20, unique=True)
+    description = models.TextField()
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    block_credit = models.CharField(max_length=100, null=True, blank=True)  # BC / IC
+    rcm = models.CharField(max_length=10, null=True, blank=True)
+
+    def __str__(self):
+        return self.hsn_code
+    
+
+# ====================================================== SAC Master Model ======================================================
+class SAC(models.Model):
+    sac_code = models.CharField(max_length=20, unique=True)
+    description = models.TextField()
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    block_credit = models.CharField(max_length=100, null=True, blank=True)  # BC / IC
+    rcm = models.CharField(max_length=10, null=True, blank=True)
+
+    def __str__(self):
+        return self.sac_code
+    
+
+# ====================================================== E-INVOICE REGISTER MODEL ======================================================  
+class EInvoiceRegister(models.Model):
+    supplier_gstin = models.CharField(max_length=20)
+    document_number = models.CharField(max_length=50)
+    document_date = models.DateField()
+    supply_type = models.CharField(max_length=10)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    eway_bill_no = models.CharField(max_length=50, null=True, blank=True)
+    irn = models.CharField(max_length=100, unique=True)
+    irn_status = models.CharField(max_length=20)
+    ack_no = models.CharField(max_length=50)   
+    irn_date = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.document_number} - {self.irn}"
+    

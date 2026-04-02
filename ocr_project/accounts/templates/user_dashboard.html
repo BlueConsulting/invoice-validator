@@ -2,7 +2,7 @@
 
 <html>
 
-<head>
+<head>       
 
   <title>User Dashboard - Invoice Management</title>
 
@@ -229,7 +229,6 @@
     }
     
 
-
     /* Invoice Table */
     .invoice-table {
       background: #f5f1f1;
@@ -418,9 +417,9 @@
       background-color: #fff;
       padding: 20px;
       border-radius: 8px;
-      width: 90%;
-      max-width: 1200px;   /* good for table */
-      max-height: 85vh;
+      width: 93%;
+      max-width: 1320px;
+      max-height: 90vh;
       overflow-y: auto;    /* scrolling if table is large */
     }
 
@@ -434,6 +433,59 @@
 
     .modal-table td:first-child {
       font-weight: 600;
+    }
+
+
+    /* Raw Data button in Response column */
+    .raw-data-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .raw-data-btn:hover {
+      background: #1d4ed8;
+    }
+
+
+    /* Raw Data Modal Tabs */
+    .raw-data-tab-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .raw-tab-btn {
+      padding: 8px 18px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      color: #374151;
+      transition: background 0.2s;
+    }
+    .raw-tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .raw-tab-btn:hover:not(.active) {
+      background: #dbeafe;
+    }
+    .raw-tab-content {
+      display: none;
+    }
+    .raw-tab-content.active {
+      display: block;
     }
 
     .sub-section-header td {
@@ -652,7 +704,6 @@
     .hold { background: #3498db; }
     .rejected { background: #e74c3c; }
     .approved { background: #2ecc71; }
-    .accounted { background: #9b59b6; }
 
     /* Usage Meter Card */
     .usage-meter-container {
@@ -861,9 +912,7 @@
         <button class="nav-btn" onclick="showSection('hold', this)">⏸ On Hold</button>
         <button class="nav-btn" onclick="showSection('rejected', this)">❌ Rejected</button>
         <button class="nav-btn" onclick="showSection('approved', this)">✅ Approved</button>
-        <button class="nav-btn" onclick="showSection('accounted', this)">📚 Accounted</button>
-        <!-- Step 1 : for E-Invoice Register -->
-        <button class="nav-btn" onclick="showSection('einvoiceregister', this)">🧾 E-Invoice Register</button>
+        <button class="nav-btn" onclick="showSection('accounted', this)">🧾 E-Invoice Register</button>
       </div>
     </div>
 
@@ -874,6 +923,7 @@
   </div>
 
   
+
   <div class="container">
     
 
@@ -916,14 +966,10 @@
             <div class="summary-count">{{ approved_count }}</div>
           </div>
 
-          <div class="summary-card accounted">
-            <div class="summary-title">Accounted</div>
-            <div class="summary-count">{{ accounted_count }}</div>
-          </div>
-
         </div>
       </div>
       <!-- SUMMARY CARDS END HERE -->
+      
       
       <!-- Usage Meter Section -->
       <div class="dashboard-section-gap">
@@ -968,7 +1014,6 @@
     </div>
 
 
-
     <!-- Pending Action Section (Standing Status) -->
     <div id="pending" class="section">
 
@@ -1000,6 +1045,7 @@
                   Check All <br>
                   <input type="checkbox" id="check-all">
               </th>
+
               <th class="actions-header">Actions</th>
 
             </tr>
@@ -1042,7 +1088,7 @@
               <th>
                 <select form="pending-filters" name="status_prefix" style="width: 100%; padding: 4px;">
                   <option value="">All</option>
-                  <option value="Pending" {% if filters.status_prefix == "Pending" %}selected{% endif %}>Pending</option>
+                  <option value="Standing" {% if filters.status_prefix == "Standing" or filters.status_prefix == "Pending" %}selected{% endif %}>Pending Action</option>
                   <option value="Approved" {% if filters.status_prefix == "Approved" %}selected{% endif %}>Approved</option>
                   <option value="Hold" {% if filters.status_prefix == "Hold" %}selected{% endif %}>Hold</option>
                   <option value="Rejected" {% if filters.status_prefix == "Rejected" %}selected{% endif %}>Rejected</option>
@@ -1067,15 +1113,12 @@
               <td>{{ invoice.vendor_name }}</td>
               <td>{{ invoice.invoice_number }}</td>
               <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
-              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
+              <td class="pending-invoice-value" data-amount="{{ invoice.invoice_value|floatformat:2 }}">₹{{ invoice.invoice_value|floatformat:2 }}</td>
               
               <td>
                 <!-- 🔽 Invoice Validation Check Buttons -->
                 <div class="check-buttons" style="margin-top:6px;">
-
-                  <!-- Change 1 -->
-                  <!-- <button class="check-btn featured" onclick=openAccountModal"({{ invoice.id }})">Account</button> -->
-                  
+                                    
                   <button class="check-btn featured account-btn"
                           data-invoice-id="{{ invoice.id }}"
                           onclick="openAccountModal({{ invoice.id }})">
@@ -1086,11 +1129,10 @@
                       class="check-btn featured invoice-btn"
                       data-invoice-id="{{ invoice.id }}"
                       onclick="openInvoiceModal({{ invoice.id }})"
-                      title="Invoice Check">
+                      title="Invoice Check">    
                     Invoice
                   </button>
                   
-                  <!-- <button class="check-btn featured" onclick="openGstModal({{ invoice.id }})">GST</button> -->
                   <button
                     class="check-btn featured gst-btn"
                     data-invoice-id="{{ invoice.id }}"
@@ -1111,8 +1153,10 @@
               </td>
 
 
-              <td>{{ invoice.response|default:"—" }}</td>
-              
+              <td>
+                <button class="raw-data-btn" onclick="openRawDataModal({{ invoice.id }})">Raw Data</button>
+              </td>
+
 
               <!-- File Column -->
               <td>
@@ -1445,7 +1489,6 @@
     </div>
 
 
-
     <!-- Approved Section -->
     <div id="approved" class="section">
       <form id="approved-filters" method="get" action="">
@@ -1530,14 +1573,6 @@
 
               <!-- Actions Column -->
               <td>
-              <!--
-                <form method="post" action="{% url 'update_invoice_status' invoice.id %}" style="display: inline;">
-                  {% csrf_token %}
-                  <input type="hidden" name="status" value="Accounted">
-                  <button type="submit" class="action-btn good-to-account-btn">Mark as Accounted</button>
-                </form>
-              -->
-                
                 <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
               </td>
 
@@ -1570,132 +1605,8 @@
 
 
 
-    <!-- Accounted Section -->
+    <!-- E-Invoice Register Section (moved to Accounted slot) -->
     <div id="accounted" class="section">
-      <form id="accounted-filters" method="get" action="">
-        <input type="hidden" name="section" value="accounted">
-      </form>
-
-      <div style="margin-bottom: 15px;">
-        <button type="submit" form="accounted-filters" class="filter-btn" style="padding: 8px 16px; font-size: 12px;">Apply Filters</button>
-        <a href="?section=accounted" class="clear-filters" style="font-size: 12px; margin-left: 10px;">Clear All</a>
-      </div>
-       
-      <div class="invoice-table">
-        {% if accounted_invoices %}
-        <table>
-
-          <thead>
-            <tr>
-              <th>Vendor Name</th>
-              <th>Invoice No.</th>
-              <th>Invoice Date</th>
-              <th>Invoice Value</th>
-              <th>Invoice Status</th>
-              <th>Response</th>
-              <th>File</th>
-              <th style="text-align:center;">
-                Check All <br>
-                <input type="checkbox" id="check-all">
-              </th>
-              <th>Actions</th>
-            </tr>
-            <!-- Filter Row -->
-            <tr style="background-color: #f5f5f5;">
-              <th><input form="accounted-filters" type="text" name="vendor_prefix" value="{{ filters.vendor_prefix }}" placeholder="Vendor starts with..." style="width: 100%;"></th>
-              <th><input form="accounted-filters" type="text" name="invoice_no_prefix" value="{{ filters.invoice_no_prefix }}" placeholder="Invoice No. starts with..." style="width: 100%;"></th>
-              <th style="min-width: 200px; max-width: 220px;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <div style="display: flex; align-items: center; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">From:</span>
-                    <input form="accounted-filters" type="date" 
-                           name="from_date"
-                           value="{{ filters.from_date }}"
-                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 600; min-width: 28px; white-space: nowrap;">To:</span>
-                    <input form="accounted-filters" type="date"
-                           name="to_date"
-                           value="{{ filters.to_date }}"
-                           style="flex: 1; padding: 2px 4px; font-size: 11px;">
-                  </div>
-                </div>
-              </th>
-              <th>
-                <input form="accounted-filters" type="number" step="0.01" name="amount_min" value="{{ filters.amount_min }}" placeholder="Min" style="width: 48%;">
-                <input form="accounted-filters" type="number" step="0.01" name="amount_max" value="{{ filters.amount_max }}" placeholder="Max" style="width: 48%;">
-              </th>
-              <th><input form="accounted-filters" type="text" name="status_prefix" value="{{ filters.status_prefix }}" placeholder="Status starts with..." style="width: 100%;"></th>
-              <th></th>
-              <th></th>
-              <th></th>
-              <th></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for invoice in accounted_invoices.object_list %}
-            <tr>
-              <td>{{ invoice.vendor_name }}</td>
-              <td>{{ invoice.invoice_number }}</td>
-              <td>{{ invoice.invoice_date|date:"d M Y" }}</td>
-              <td>₹{{ invoice.invoice_value|floatformat:2 }}</td>
-              <td>{{ invoice.status }}</td>
-              <td>{{ invoice.response|default:"—" }}</td>
-
-
-              <!-- File Column -->
-              <td>
-                <a href="{{ invoice.file_path }}" target="_blank">View</a>
-              </td>
-              
-
-              <!-- Check All column -->
-              <td style="text-align:center;">
-                <input type="checkbox" class="row-checkbox">
-              </td>
-
-
-              <!-- Actions Column (summary must be here)-->
-              <td>
-                <a href="{% url 'download_validation_summary' invoice.id %}" class="action-btn summary-btn">📥 Summary</a>
-              </td>
-
-            </tr>
-
-            {% endfor %}
-          </tbody>
-
-        </table>
-
-        <!-- Pagination Concept for Accounted Section -->
-
-        {% if accounted_invoices.paginator.num_pages > 1 %}
-        <div class="pagination" style="margin-top: 20px; text-align: center;">
-          {% if accounted_invoices.has_previous %}
-            <a href="?section=accounted&accounted_page={{ accounted_invoices.previous_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">← Previous</a>
-          {% endif %}
-          <span style="margin: 0 15px; font-weight: bold;">Page {{ accounted_invoices.number }} of {{ accounted_invoices.paginator.num_pages }}</span>
-          {% if accounted_invoices.has_next %}
-            <a href="?section=accounted&accounted_page={{ accounted_invoices.next_page_number }}&vendor_prefix={{ filters.vendor_prefix }}&invoice_no_prefix={{ filters.invoice_no_prefix }}&from_date={{ filters.from_date }}&to_date={{ filters.to_date }}&amount_min={{ filters.amount_min }}&amount_max={{ filters.amount_max }}&status_prefix={{ filters.status_prefix }}&response_prefix={{ filters.response_prefix }}&file_prefix={{ filters.file_prefix }}" class="pagination-btn">Next →</a>
-          {% endif %}
-        </div>
-        {% endif %}
-
-        {% else %}
-        <div class="empty-state">
-          <h3>No accounted invoices yet</h3>
-          <p>Invoices will appear here once they are approved.</p>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    
-    <!-- E-Invoice Register Section -->
-    <div id="einvoiceregister" class="section">
-
       <div class="section-header">
         <h3>🧾 E-Invoice Register</h3>
       </div>
@@ -1762,7 +1673,8 @@ function showSection(id, el)
 
 window.addEventListener('load', function () 
 {
-  const section = 'upload';
+  const requestedSection = '{{ section|default:"upload" }}';
+  const section = requestedSection === 'einvoiceregister' ? 'accounted' : requestedSection;
 
   const btn = document.querySelector(
     `.nav-btn[onclick="showSection('${section}', this)"]`
@@ -1770,6 +1682,13 @@ window.addEventListener('load', function ()
 
   if (btn) {
     showSection(section, btn);
+  } else {
+    const defaultBtn = document.querySelector(
+      `.nav-btn[onclick="showSection('upload', this)"]`
+    );
+    if (defaultBtn) {
+      showSection('upload', defaultBtn);
+    }
   }
 });
 
@@ -1815,11 +1734,14 @@ document.addEventListener("click", function (e)
 </script>
 
 
-
 <!-- ======================= INVOICE MODAL Javascript ======================= -->
 <script>
 window.openInvoiceModal = function(invoiceId) {
   console.log("Invoice clicked:", invoiceId);
+  const modal = document.getElementById("invoiceModal");
+  if (modal) {
+    modal.setAttribute("data-invoice-id", String(invoiceId));
+  }
 
   fetch(`/invoice-raw-data/${invoiceId}/`)
     .then(res => {
@@ -1850,7 +1772,6 @@ window.openInvoiceModal = function(invoiceId) {
       document.getElementById("total_ocr").innerText = ic2.ocr_total ?? "-";
       document.getElementById("total_status").innerText = ic2.status ?? "-";
       
-
       /* ================= Complete Invoice Check ================= */
       const accountCheck = data.account_check || {};
       console.log("Account Check:", accountCheck);
@@ -1868,6 +1789,9 @@ window.openInvoiceModal = function(invoiceId) {
         accountCheck.customer_address?.invoice_data || "-";
       document.getElementById("address_status").innerText =
         accountCheck.customer_address?.status || "-";
+
+
+       
 
       /* ================= Other Parameter Check ================= */
       const otherParams = data.other_parameter_check || {};
@@ -1894,6 +1818,7 @@ window.openInvoiceModal = function(invoiceId) {
 
       /* ================= SHOW MODAL (IMPORTANT) ================= */
       document.getElementById("invoiceModal").classList.add("is-open");
+      loadRemarksForModal("invoiceModal", invoiceId);
       console.log("Modal opened successfully");
     })
     .catch(err => {
@@ -1913,20 +1838,68 @@ function closeInvoiceModal() {
 window.openEinvoiceModal = function(invoiceId) {
   console.log("E-Invoice button clicked:", invoiceId);
 
-  fetch(`/invoice-raw-data/${invoiceId}/`)
+  fetch(`/invoice-einvoice-comparison/${invoiceId}/`)
     .then(res => res.json())
     .then(data => {
-      const einvoice = data.result?.CHECKS?.['e-invoice_data'] || {};
-      
-      document.getElementById("einv_status").innerText = einvoice.status || "-";
-      document.getElementById("einv_reason").innerText = einvoice.reason || "-";
-      document.getElementById("einv_liability").innerText = einvoice.einvoice_liability || "-";
-      
+      console.log("E-Invoice comparison data:", data);
+
+      if (!data.success) {
+        alert("Error loading comparison data: " + (data.error || "Unknown error"));
+        return;
+      }
+
+      // Build comparison table from data
+      const tbody = document.getElementById("einvoiceComparisonBody");
+      if (tbody) {
+        tbody.innerHTML = "";                   // Clear existing rows
+
+        data.comparison_data.forEach(row => {
+          let statusBadge = row.match_status;
+          if (row.match_status === "Matched") 
+          {
+            statusBadge = "✅ Matched";
+          } 
+          else if (row.match_status === "Mismatch") 
+          {
+            statusBadge = "❌";
+          } 
+          else if (row.match_status === "Missing") 
+          {
+            statusBadge = "⚠️";
+          } 
+          else if (row.match_status === "Not Found") 
+          {
+            statusBadge = "—";
+          }
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="font-weight: 600;">${row.field_name}</td>
+            <td>${row.uploaded_value}</td>
+            <td>${row.govt_value}</td>
+            <td style="text-align: center; font-size: 14px; font-weight: 600;">${statusBadge}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Show status indicator
+        const statusDiv = document.getElementById("einvoiceStatusIndicator");
+        if (statusDiv) {
+          const message = data.simple_message || "Comparison generated.";
+          const isStrongMatch = data.match_basis === "irn" || data.match_basis === "gstin_document";
+          const boxStyle = isStrongMatch
+            ? "padding: 12px; background: #d1fae5; border-radius: 6px; color: #065f46; font-weight: 600;"
+            : "padding: 12px; background: #fef3c7; border-radius: 6px; color: #92400e; font-weight: 600;";
+
+          statusDiv.innerHTML = `<div style="${boxStyle}">${message}</div>`;
+        }
+      }
+
       document.getElementById("einvoiceModal").classList.add("is-open");
     })
     .catch(err => {
       console.error("E-Invoice modal error:", err);
-      alert("Error loading E-Invoice data");
+      alert("Error loading E-Invoice comparison data");
     });
 };
 
@@ -1968,6 +1941,10 @@ function closeEwayModal() {
 /* ================= Javascript for GST MODAL ================= */
 window.openGstModal = function(invoiceId) {
   console.log("GST button clicked:", invoiceId);
+  const modal = document.getElementById("gstModal");
+  if (modal) {
+    modal.setAttribute("data-invoice-id", String(invoiceId));
+  }
 
   fetch(`/invoice-raw-data/${invoiceId}/`)
     .then(async res => {
@@ -1989,7 +1966,7 @@ window.openGstModal = function(invoiceId) {
         taxCheck.Vendor_Gst_Active?.status || "-";
 
       /* ================= TAX PAYER DETAILS ================= */
-      document.getElementById("tax_payer_type").innerText = 
+      document.getElementById("tax_payer_type").innerText =  
         taxCheck.Vendor_TaxPayer_type?.status || "-";
       
       document.getElementById("filing_frequency").innerText = 
@@ -2014,6 +1991,7 @@ window.openGstModal = function(invoiceId) {
       document.getElementById("gstr1_p3").innerText = gstr1[2]?.status || "-";
 
       document.getElementById("gstModal").classList.add("is-open");
+      loadRemarksForModal("gstModal", invoiceId);
       console.log("GST Modal opened successfully");
     })
     .catch(err => {
@@ -2033,6 +2011,10 @@ function closeGstModal() {
 <script>
 window.openAccountModal = function(invoiceId) {
   console.log("Account button clicked:", invoiceId);
+  const modal = document.getElementById("accountModal");
+  if (modal) {
+    modal.setAttribute("data-invoice-id", String(invoiceId));
+  }
 
   fetch(`/invoice-raw-data/${invoiceId}/`)
     .then(res => res.json())
@@ -2049,9 +2031,9 @@ window.openAccountModal = function(invoiceId) {
       }
 
       // Complete Invoice
-      setValue("acc_complete_invoice_gst", accountFull.Complete_Invoice?.gst_portal);
-      setValue("acc_complete_invoice_inv", accountFull.Complete_Invoice?.invoice_data);
-      setValue("acc_complete_invoice_status", accountFull.Complete_Invoice?.status);
+      //setValue("acc_complete_invoice_gst", accountFull.Complete_Invoice?.gst_portal);
+      //setValue("acc_complete_invoice_inv", accountFull.Complete_Invoice?.invoice_data);
+      //setValue("acc_complete_invoice_status", accountFull.Complete_Invoice?.status);
 
       // Customer Address
       setValue("acc_customer_address_gst", accountFull.Customer_Adress?.gst_portal);
@@ -2064,9 +2046,9 @@ window.openAccountModal = function(invoiceId) {
       setValue("acc_customer_name_status", accountFull.Customer_Name?.status);
 
       // Invoice Blocked Credit
-      setValue("acc_blocked_credit_gst", accountFull.Invoice_Blocked_Credit?.gst_portal);
-      setValue("acc_blocked_credit_inv", accountFull.Invoice_Blocked_Credit?.invoice_data);
-      setValue("acc_blocked_credit_status", accountFull.Invoice_Blocked_Credit?.status);
+      //setValue("acc_blocked_credit_gst", accountFull.Invoice_Blocked_Credit?.gst_portal);
+      //setValue("acc_blocked_credit_inv", accountFull.Invoice_Blocked_Credit?.invoice_data);
+      //setValue("acc_blocked_credit_status", accountFull.Invoice_Blocked_Credit?.status);
 
       // Invoice Date
       setValue("acc_invoice_date_gst", accountFull.Invoice_Date?.gst_portal);
@@ -2079,9 +2061,9 @@ window.openAccountModal = function(invoiceId) {
       setValue("acc_invoice_number_status", accountFull.Invoice_Number?.status);
 
       // RCM Services
-      setValue("acc_rcm_services_gst", accountFull["Invoice_RCM-Services"]?.gst_portal);
-      setValue("acc_rcm_services_inv", accountFull["Invoice_RCM-Services"]?.invoice_data);
-      setValue("acc_rcm_services_status", accountFull["Invoice_RCM-Services"]?.status);
+      //setValue("acc_rcm_services_gst", accountFull["Invoice_RCM-Services"]?.gst_portal);
+      //setValue("acc_rcm_services_inv", accountFull["Invoice_RCM-Services"]?.invoice_data);
+      //setValue("acc_rcm_services_status", accountFull["Invoice_RCM-Services"]?.status);
 
       // Previous Year
       setValue("acc_pre_year_gst", accountFull.Pre_year?.gst_portal);
@@ -2099,6 +2081,7 @@ window.openAccountModal = function(invoiceId) {
       setValue("acc_valid_invoice_status", accountFull.valid_invoice?.status);
 
       document.getElementById("accountModal").classList.add("is-open");
+      loadRemarksForModal("accountModal", invoiceId);
 
       // call the color logic here 
       updateAccountButtonColor();
@@ -2124,6 +2107,10 @@ window.openTaxModal = function(invoiceId)
 {
 
   console.log("Tax clicked, invoice =", invoiceId);
+  const modal = document.getElementById("taxModal");
+  if (modal) {
+    modal.setAttribute("data-invoice-id", String(invoiceId));
+  }
 
   fetch(`/invoice-raw-data/${invoiceId}/`)
     .then(res => res.json())
@@ -2157,8 +2144,67 @@ window.openTaxModal = function(invoiceId)
       document.getElementById("rcm_invoice").innerText =
         tax.rcm_fc ?? "-";
 
+      /* ============ TAX SHOULD BE CHARGED (HSN/SAC LOOKUP) ============ */
+      const taxShould =
+        data.tax_should_be_charged ||
+        data.result?.CHECKS?.tax_should_be_charged ||
+        {};
+
+      const expectedRate = taxShould.tax_rate;
+      const expectedProductCode = taxShould.product_code;
+      const expectedBlockCredit = taxShould.block_credit;
+      const expectedRcm = taxShould.rcm;
+
+      const productCodeMissing =
+        expectedProductCode === null || expectedProductCode === undefined || expectedProductCode === "";
+      const noLookupData =
+        (expectedRate === null || expectedRate === undefined || expectedRate === "") &&
+        (expectedBlockCredit === null || expectedBlockCredit === undefined || expectedBlockCredit === "") &&
+        (expectedRcm === null || expectedRcm === undefined || expectedRcm === "");
+
+      const taxRateExpectedCell = document.getElementById("tax_rate_expected");
+      if (taxRateExpectedCell) {
+        if (noLookupData) {
+          if (productCodeMissing) {
+            taxRateExpectedCell.innerText = "No HSN/SAC/Product code found in Json Data";
+          } else {
+            taxRateExpectedCell.innerText = `No HSN/SAC found for Product Code: ${expectedProductCode}`;
+          }
+        } else {
+          const rateText =
+            expectedRate === null || expectedRate === undefined || expectedRate === ""
+              ? "-"
+              : `${expectedRate}%`;
+          const codeText =
+            expectedProductCode === null ||
+            expectedProductCode === undefined ||
+            expectedProductCode === ""
+              ? ""
+              : ` (Code: ${expectedProductCode})`;
+          taxRateExpectedCell.innerText = `${rateText}${codeText}`;
+        }
+      }
+
+      document.getElementById("block_credit_expected").innerText =
+        expectedBlockCredit ?? "-";
+
+      document.getElementById("rcm_expected").innerText =
+        expectedRcm ?? "-";
+
+      // Derive expected tax type from RCM value when available.
+      let expectedTaxType = "-";
+      if (expectedRcm !== null && expectedRcm !== undefined && expectedRcm !== "") {
+        const rcmText = String(expectedRcm).toLowerCase();
+        expectedTaxType =
+          rcmText === "yes" || rcmText === "true" || rcmText === "rcm"
+            ? "Reverse Charge"
+            : "Forward Charge";
+      }
+      document.getElementById("tax_type_expected").innerText = expectedTaxType;
+
 
       document.getElementById("taxModal").classList.add("is-open");
+      loadRemarksForModal("taxModal", invoiceId);
     })
     .catch(err => {
       console.error("Error loading tax data:", err);
@@ -2173,9 +2219,34 @@ window.closeTaxModal = function() {
 
 <!-- TABLE MODAL Javascript -->
 <script>
+function formatIndianAmount(value, withSymbol = false) {
+  if (value === null || value === undefined || value === "") return "-";
+
+  const parsed = Number(String(value).replace(/[,₹\s]/g, ""));
+  if (Number.isNaN(parsed)) return "-";
+
+  const formatted = parsed.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return withSymbol ? `₹${formatted}` : formatted;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".pending-invoice-value").forEach((cell) => {
+    const amount = cell.getAttribute("data-amount");
+    cell.innerText = formatIndianAmount(amount, true);
+  });
+});
+
 window.openTableModal = function(invoiceId) {
 
   console.log("Table clicked, invoice =", invoiceId);
+  const modal = document.getElementById("tableModal");
+  if (modal) {
+    modal.setAttribute("data-invoice-id", String(invoiceId));
+  }
 
   fetch(`/invoice-raw-data/${invoiceId}/`)
     .then(res => res.json())
@@ -2194,19 +2265,42 @@ window.openTableModal = function(invoiceId) {
       }
 
       tableItems.forEach(item => {
+        
 
+        // Try multiple possible keys for product code to handle variability in data 
+        // This is important because different invoices might have different naming conventions for the same data point
+        // The order of keys is based on common patterns observed in invoice data, starting with the most likely ones 
+        // If none of the keys are found, it will default to "-"
         const tr = document.createElement("tr");
+        const productCode =
+          item.product_code ||
+          item.productCode ||
+          item.Product_Code ||
+          item["Product Code"] ||
+          item.hsn_code ||
+          item.HSN_Code ||
+          item["HSN Code"] ||
+          item.hsn ||
+          item.HSN ||
+          item.hsn_sac ||
+          item["HSN/SAC"] ||
+          item["HSN/SAC Code"] ||
+          item.sac ||
+          item.sac_code ||
+          item.SAC ||
+          item.SAC_Code ||
+          "-";
 
         tr.innerHTML = `
           <td>${item.item_description ?? "-"}</td>
-          <td>${item.product_code ?? "-"}</td>
+          <td>${productCode}</td>
           <td>${item.item_quantity ?? "-"}</td>
-          <td>${item.unit_price ?? "-"}</td>
-          <td>${item.qty_unitprice ?? "-"}</td>
+          <td>${formatIndianAmount(item.unit_price)}</td>
+          <td>${formatIndianAmount(item.qty_unitprice)}</td>
           <td>${item.tax_rate ?? "-"}</td>
-          <td>${item.amount ?? "-"}</td>
-          <td>${item["qty_unit+rate_qty_unit"] ?? "-"}</td>
-          <td>${item["qty_unit+2_rate_qty_unit"] ?? "-"}</td>
+          <td>${formatIndianAmount(item.amount)}</td>
+          <td>${formatIndianAmount(item["qty_unit+rate_qty_unit"])}</td>
+          <td>${formatIndianAmount(item["qty_unit+2_rate_qty_unit"])}</td>
           <td>${item.check1 ?? "-"}</td>
         `;
 
@@ -2215,19 +2309,20 @@ window.openTableModal = function(invoiceId) {
 
       /* ================= Invoice Calculation 1 ================= */
       const ic1 = data.invoice_calculation_1 || {};
-      document.getElementById("basic_ocr").innerText = ic1.ocr_amount ?? "-";
-      document.getElementById("basic_table").innerText = ic1.table_sum ?? "-";
+      document.getElementById("basic_ocr").innerText = formatIndianAmount(ic1.ocr_amount);
+      document.getElementById("basic_table").innerText = formatIndianAmount(ic1.table_sum);
       document.getElementById("basic_status").innerText = ic1.status ?? "-";
 
       /* ================= Invoice Calculation 2 ================= */
       const ic2 = data.invoice_calculation_2 || {};
-      document.getElementById("total_table").innerText = ic2.table_sum ?? "-";
-      document.getElementById("tax_ocr").innerText = ic2.ocr_tax ?? "-";
-      document.getElementById("total_ocr").innerText = ic2.ocr_total ?? "-";
+      document.getElementById("total_table").innerText = formatIndianAmount(ic2.table_sum);
+      document.getElementById("tax_ocr").innerText = formatIndianAmount(ic2.ocr_tax);
+      document.getElementById("total_ocr").innerText = formatIndianAmount(ic2.ocr_total);
       document.getElementById("total_status").innerText = ic2.status ?? "-";
 
       // OPEN MODAL 
       document.getElementById("tableModal").classList.add("is-open");      // used flex to make it scrollable when content is large 
+      loadRemarksForModal("tableModal", invoiceId);
     })
     .catch(err => {
       console.error("Error loading table data:", err);
@@ -2245,7 +2340,7 @@ function closeTableModal() {
 <!-- ================= INVOICE MODAL (GLOBAL) ================= -->
 <!-- INVOICE MODAL HTML -->
 
-<div id="invoiceModal" class="modal">
+<div id="invoiceModal" class="modal" data-remark-section="invoice">
   <div class="modal-content">
 
     <span class="close" onclick="closeInvoiceModal()">×</span>
@@ -2260,12 +2355,12 @@ function closeTableModal() {
     <h2>Name & Address Check</h2>
     <br>
 
-    <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="name_address_check">
       <tr>
         <th>Parameter</th>
-        <th>GST Portal</th>
-        <th>Invoice Data</th>
-        <th>Status</th>
+        <th>GST Portal Data</th>
+        <th>Invoice Extracted Data</th>
+        <th>Validation Status</th>
         <th>Remark</th>
       </tr>
 
@@ -2291,7 +2386,7 @@ function closeTableModal() {
 
     </table>
     
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="name_address_check">
       <button class="save-remark-btn">Save Remark</button>
     </div>
 
@@ -2313,8 +2408,8 @@ function closeTableModal() {
 
       <tr>
         <th>Parameter</th>
-        <th>Status</th>
-        <th>Data</th>
+        <th>Validation Status</th>
+        <th>Invoice Extracted Data</th>
       </tr>
 
       <tr>
@@ -2354,7 +2449,7 @@ function closeTableModal() {
 
 
 <!-- ================= GST MODAL HTML ================= -->
-<div id="gstModal" class="modal">
+<div id="gstModal" class="modal" data-remark-section="gst">
 
   <div class="modal-content">
 
@@ -2366,7 +2461,7 @@ function closeTableModal() {
     <br>
 
     <!-- GST content will come here in next steps -->
-     <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="gst_checks">
 
       <colgroup>
         <col style="width: 40%;">
@@ -2376,7 +2471,7 @@ function closeTableModal() {
 
       <tr>
         <th>Parameter</th>
-        <th>Status</th>
+        <th>Validation Status</th>
         <th>Remark</th>
       </tr>
 
@@ -2471,7 +2566,7 @@ function closeTableModal() {
       </tr>
     </table>
 
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="gst_checks">
       <button class="save-remark-btn">Save Remark</button>
     </div>
 
@@ -2481,7 +2576,7 @@ function closeTableModal() {
   
 
 <!-- ================= HTML for TAX MODAL ================= --> 
-<div id="taxModal" class="modal">
+<div id="taxModal" class="modal" data-remark-section="tax">
   <div class="modal-content">
     <span class="close" onclick="closeTaxModal()">×</span>
     <br>
@@ -2490,7 +2585,7 @@ function closeTableModal() {
     <h1>Pan Check</h1>
     <br>
 
-    <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="pan_check">
       <colgroup>
         <col style="width: 40%;">
         <col style="width: 30%;">
@@ -2499,7 +2594,7 @@ function closeTableModal() {
 
       <tr>
         <th>Parameter</th>
-        <th>Status</th>
+        <th>Validation Status</th>
         <th>Remark</th>
       </tr>
 
@@ -2522,7 +2617,7 @@ function closeTableModal() {
       </tr>
     </table>
 
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="pan_check">
       <button class="save-remark-btn">Save Remark</button>
     </div>
 
@@ -2532,9 +2627,10 @@ function closeTableModal() {
     <h1>Tax Check</h1>
     <br>
 
-    <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="tax_check">
       <colgroup>
-        <col style="width: 40%;">
+        <col style="width: 20%;">
+        <col style="width: 20%;">
         <col style="width: 30%;">
         <col style="width: 30%;">
       </colgroup>
@@ -2542,35 +2638,41 @@ function closeTableModal() {
       <tr>
         <th>Parameter</th>
         <th>Status / Value</th>
+        <th>Tax Should be Charged?</th>
         <th>Remark</th>
+
       </tr>
 
       <tr>
         <td>Tax Rate</td>
         <td id="tax_rate_invoice">-</td>
+        <td id="tax_rate_expected">-</td>
         <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
       </tr>
 
       <tr>
         <td>Tax Type</td>
         <td id="tax_type_invoice">-</td>
+        <td id="tax_type_expected">-</td>
         <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
       </tr>
 
       <tr>
         <td>Block Credit / Input Credit</td>
         <td id="block_credit_invoice">-</td>
+        <td id="block_credit_expected">-</td>
         <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
       </tr>
 
       <tr>
         <td>RCM / Forward Charge</td>
         <td id="rcm_invoice">-</td>
+        <td id="rcm_expected">-</td>
         <td><input type="text" class="remark-input" placeholder="Enter remark..."></td>
       </tr>
     </table>
 
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="tax_check">
       <button class="save-remark-btn">Save Remark</button>
     </div>
 
@@ -2578,44 +2680,40 @@ function closeTableModal() {
 </div>
 
 
-
 <!-- ================ E-INVOICE MODAL HTML================ -->
+
 <div id="einvoiceModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeEinvoiceModal()">×</span>
     <br>
-    <h1>E-Invoice Validation</h1>
+    <h1>📊 E-Invoice Comparison</h1>
     <br>
     
-    <div style="text-align: center; padding: 40px 20px;">
-      <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-      <h2 style="color: #f59e0b; margin-bottom: 16px;">Coming Soon</h2>
-      <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-        E-Invoice validation feature is currently under development.<br>
-        This will include liability checks, IRN validation, and portal verification.
-      </p>
+    <!-- Status Indicator -->
+    <div id="einvoiceStatusIndicator" style="margin-bottom: 20px;"></div>
 
-      <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 8px; text-align: left;">
-        <h3 style="color: #92400e; margin-bottom: 10px;">Available Data:</h3>
-        <table style="width: 100%; font-size: 14px;">
-          <tr>
-            <td style="padding: 8px; font-weight: 600;">Status:</td>
-            <td style="padding: 8px;" id="einv_status">-</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; font-weight: 600;">Reason:</td>
-            <td style="padding: 8px;" id="einv_reason">-</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; font-weight: 600;">Liability:</td>
-            <td style="padding: 8px;" id="einv_liability">-</td>
-          </tr>
-        </table>
-      </div>
-    </div>
+    <!-- Comparison Table -->
+    <table class="modal-table">
+      <thead>
+        <tr>
+          <th>Field Name</th>
+          <th>Uploaded Invoice</th>
+          <th>Govt Data (E-Invoice Register)</th>
+          <th>Match Status</th>
+        </tr>
+      </thead>
+      <tbody id="einvoiceComparisonBody">
+        <!-- Dynamically populated by JavaScript -->
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 20px; color: #6b7280;">
+            Loading comparison data...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
   </div>
 </div>
-
 
 
 <!-- ================= E-WAY BILL MODAL HTML ================= -->
@@ -2665,27 +2763,27 @@ function closeTableModal() {
 
 
 <!-- TABLE CHECK MODAL -->
-<div id="tableModal" class="modal">
+<div id="tableModal" class="modal" data-remark-section="table">
   <div class="modal-content">
     <span class="close" onclick="closeTableModal()">×</span>
 
     <h1>Table Check</h1>
     <br>
 
-    <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="invoice_calculation_2">
       <thead>
         <tr>
-          <th>Item Description</th>
-          <th>Product Code</th>
-          <th>Quantity</th>
-          <th>Unit Price</th>
+          <th>Item Description (From Invoice)</th>
+          <th>Product Code / HSN</th>
+          <th>Quantity (From Invoice)</th>
+          <th>Unit Price per Item</th>
           <th>Qty × Unit Price</th>
-          <th>Tax Rate (%)</th>
-          <th>Amount</th>
-          <!-- <th>Qty + Tax</th> -->
-          <th>Qty * Unit Price + Tax</th>
-          <!-- <th>Qty + 2×Tax</th> -->
-          <th>Qty * Unit price + 2*Tax</th>
+          <th>GST Rate (%)</th>
+          <th>Amount Mentioned in Invoice</th>
+          <!-- <th>Qty * Unit Price + Tax</th> -->
+          <th>Calculated Amount Including GST</th>
+          <!-- <th>Qty * Unit price + 2*Tax</th> -->
+          <th>Calculated Amount Including Double GST</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -2753,7 +2851,7 @@ function closeTableModal() {
       </tr>
     </table>
 
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="invoice_calculation_2">
       <button class="save-remark-btn">Save Remark</button>
     </div>
 
@@ -2763,14 +2861,14 @@ function closeTableModal() {
 
 <!-- Change 2 for Account Button-->
 <!-- ================= ACCOUNT CHECK MODAL ================= -->
-<div id="accountModal" class="modal">
+<div id="accountModal" class="modal" data-remark-section="account">
   <div class="modal-content">
     <span class="close" onclick="closeAccountModal()">×</span>
     <br>
     <h1>Account Check</h1>
     <br>
 
-    <table class="modal-table">
+    <table class="modal-table" data-remark-subsection="account_check">
       <colgroup>
         <col style="width: 22%;">
         <col style="width: 22%;">
@@ -2781,12 +2879,13 @@ function closeTableModal() {
 
       <tr>
         <th>Parameter</th>
-        <th>GST Portal</th>
-        <th>Invoice Data</th>
-        <th>Status</th>
+        <th>GST Portal Data</th>
+        <th>Invoice Extracted Data</th>
+        <th>Validation Status</th>
         <th>Remark</th>
       </tr>
 
+    <!--
       <tr>
         <td>Complete Invoice</td>
         <td id="acc_complete_invoice_gst"></td>
@@ -2796,6 +2895,7 @@ function closeTableModal() {
           <input type="text" class="remark-input" placeholder="Enter remark...">
         </td>
       </tr>
+    -->
 
       <tr>
         <td>Customer Address</td>
@@ -2817,6 +2917,7 @@ function closeTableModal() {
         </td>
       </tr>
 
+    <!--
       <tr>
         <td>Invoice Blocked Credit</td>
         <td id="acc_blocked_credit_gst"></td>
@@ -2826,6 +2927,7 @@ function closeTableModal() {
           <input type="text" class="remark-input" placeholder="Enter remark...">
         </td>
       </tr>
+    -->
 
       <tr>
         <td>Invoice Date</td>
@@ -2847,6 +2949,7 @@ function closeTableModal() {
         </td>
       </tr>
 
+    <!--
       <tr>
         <td>Invoice RCM Services</td>
         <td id="acc_rcm_services_gst"></td>
@@ -2856,6 +2959,7 @@ function closeTableModal() {
           <input type="text" class="remark-input" placeholder="Enter remark...">
         </td>
       </tr>
+    -->
 
       <tr>
         <td>Previous Year</td>
@@ -2888,7 +2992,7 @@ function closeTableModal() {
       </tr>
     </table>
 
-    <div class="remark-action-bar">
+    <div class="remark-action-bar" data-remark-subsection="account_check">
       <button class="save-remark-btn">Save Remark</button>
     </div>
   </div>
@@ -2896,9 +3000,8 @@ function closeTableModal() {
 
 
 
-<!-- Will change logic in future if needed currently strong rules is there like to get green status 10/10 should be there
- then if >= 8 then yellow else red , if in future have to decrease the numnber of counts to change the rule then will change
- in the future currently have set strong counts to change the colour -->
+<!-- Account button color logic based on current 7 visible Account Check rows:
+ green = 7/7 correct, yellow = 5 or 6 correct, red = below 5 correct. -->
  
 <script>
 function updateAllAccountButtons(){
@@ -2931,14 +3034,12 @@ function updateAllAccountButtons(){
 
             });
 
-            const total = correct + incorrect;
-
             btn.classList.remove("account-green","account-yellow","account-red");
 
-            if(correct === total){
+            if(correct === 7){
                 btn.classList.add("account-green");
             }
-            else if(correct >= 8){  
+            else if(correct >= 5){
                 btn.classList.add("account-yellow");
             }
             else{
@@ -2951,7 +3052,8 @@ function updateAllAccountButtons(){
 
 }
 
-// button color logic for all Invoice button based on Invoice Model Checks (Complete Invoice Check + Other parameter check)
+
+// Button color logic for all Invoice button based on Invoice Model Checks (Complete Invoice Check + Other parameter check)
 function updateAllInvoiceButtons() {
   const rows = document.querySelectorAll(".invoice-row");
 
@@ -3017,8 +3119,9 @@ function updateAllInvoiceButtons() {
 
 }
 
-/* ================= GST BUTTON COLOR LOGIC ================= */
 
+
+/* ================= GST BUTTON COLOR LOGIC ================= */
 function normalizeStatus(value) {
   return (value || "").toString().trim().toLowerCase();
 }
@@ -3136,6 +3239,173 @@ function updateAllGstButtons() {
   });
 }
 
+function getCsrfToken() {
+  const name = "csrftoken=";
+  const decodedCookie = decodeURIComponent(document.cookie || "");
+  const cookies = decodedCookie.split(';');
+  for (let i = 0; i < cookies.length; i += 1) {
+    const c = cookies[i].trim();
+    if (c.startsWith(name)) {
+      return c.substring(name.length);
+    }
+  }
+  return "";
+}
+
+function normalizeRemarkKey(value) {
+  return (value || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getInputTable(input) {
+  return input ? input.closest("table") : null;
+}
+
+function getSubsectionForInput(input) {
+  const table = getInputTable(input);
+  const subsection = table?.getAttribute("data-remark-subsection") || "";
+  return normalizeRemarkKey(subsection);
+}
+
+function getParameterKeyForInput(input) {
+  const explicit = input?.getAttribute("data-param");
+  if (explicit) {
+    return normalizeRemarkKey(explicit);
+  }
+
+  const row = input?.closest("tr");
+  const firstCell = row?.querySelector("td");
+  return normalizeRemarkKey(firstCell?.textContent || "remark");
+}
+
+ 
+
+// This function is called when any modal is opened.
+// It identifies the Invocie and Remark Section based on the modal's data attributes, then fetches existing remarks 
+// for that Invoice + Remark Section from Backend and populates the remark input fields in the modal with 
+// the fetched remarks (if any). This allows users to see existing remarks and update them as needed, instead of starting 
+// with blank remark fields every time 
+
+function loadRemarksForModal(modalId, invoiceId) {
+  const modal = document.getElementById(modalId);
+  if (!modal || !invoiceId) {
+    return;
+  }
+
+  const section = normalizeRemarkKey(modal.getAttribute("data-remark-section"));
+  if (!section) {
+    return;
+  }
+
+  modal.querySelectorAll("input.remark-input").forEach((input) => {
+    input.value = "";
+  });
+
+  fetch(`/invoice-remarks/${invoiceId}/?section=${encodeURIComponent(section)}`)
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Failed to load remarks");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      const remarkMap = new Map();
+      (data.remarks || []).forEach((item) => {
+        const mapKey = `${item.subsection}::${item.parameter_key}`;
+        remarkMap.set(mapKey, item.remark || "");
+      });
+
+      modal.querySelectorAll("input.remark-input").forEach((input) => {
+        const subsection = getSubsectionForInput(input);
+        const parameterKey = getParameterKeyForInput(input);
+        const mapKey = `${subsection}::${parameterKey}`;
+        input.value = remarkMap.get(mapKey) || "";
+      });
+    })
+    .catch((err) => {
+      console.error("Failed to load remarks:", err);
+    });
+}
+
+
+// This function is called when user clicks "Save Remark" button in any modal.
+// It identifies the Invoice, Remark Section and Subsection based on the button's location in the DOM,
+// then collects all remark inputs in that subsection and sends them to backend to be saved in database
+function saveRemarksForActionBar(actionBar) {
+  const modal = actionBar?.closest(".modal");
+  const invoiceId = modal?.getAttribute("data-invoice-id");
+  const section = normalizeRemarkKey(modal?.getAttribute("data-remark-section"));
+  const subsection = normalizeRemarkKey(actionBar?.getAttribute("data-remark-subsection"));
+
+  if (!invoiceId || !section || !subsection) {
+    alert("Unable to save remark: missing invoice context.");
+    return;
+  }
+
+  let table = actionBar.previousElementSibling;
+  while (table && table.tagName !== "TABLE") {
+    table = table.previousElementSibling;
+  }
+
+  if (!table) {
+    alert("Unable to save remark: table not found.");
+    return;
+  }
+
+  const inputs = table.querySelectorAll("input.remark-input");
+  const requests = [];
+  inputs.forEach((input) => {
+    const parameterKey = getParameterKeyForInput(input);
+    const payload = {
+      invoice_id: Number(invoiceId),
+      section,
+      subsection,
+      parameter_key: parameterKey,
+      remark: input.value || "",
+    };
+
+    requests.push(
+      fetch("/invoice-remarks/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      }).then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to save one or more remarks");
+        }
+        return res.json();
+      })
+    );
+  });
+
+  Promise.all(requests)
+    .then(() => {
+      alert("Remark saved successfully.");
+    })
+    .catch((err) => {
+      console.error("Remark save failed:", err);
+      alert("Failed to save remarks.");
+    });
+}
+
+document.addEventListener("click", function (event) {
+  const saveBtn = event.target.closest(".save-remark-btn");
+  if (!saveBtn) {
+    return;
+  }
+  const actionBar = saveBtn.closest(".remark-action-bar");
+  if (actionBar) {
+    saveRemarksForActionBar(actionBar);
+  }
+});
+
 document.addEventListener("DOMContentLoaded", function() {
     updateAllAccountButtons();
     updateAllInvoiceButtons();
@@ -3143,6 +3413,785 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 </script>
+
+
+<!-- ======================= Raw Data Modal Section ======================= -->
+ 
+<div id="rawDataModal" class="modal">
+  <div class="modal-content" style="width: 94%; max-width: 1380px;">
+
+    <span class="close" onclick="closeRawDataModal()">×</span>
+
+    <h1 style="margin-bottom: 16px;">Raw Data</h1>
+
+    <!-- Tab Bar -->
+    <div class="raw-data-tab-bar">
+      <button class="raw-tab-btn active" onclick="showRawTab('invoice-data', this)">Invoice Data</button>
+      <button class="raw-tab-btn" onclick="showRawTab('table-data', this)">Table Data</button>
+      <button class="raw-tab-btn" onclick="showRawTab('tax-check', this)">Tax Check</button>
+      <button class="raw-tab-btn" onclick="showRawTab('account-check', this)">Account Check</button>
+      <button class="raw-tab-btn" onclick="showRawTab('e-invoice-data', this)">E-Invoice Data</button>
+      <button class="raw-tab-btn" onclick="showRawTab('e-way-bill-data', this)">E-Way Bill Data</button>
+      <button class="raw-tab-btn" onclick="showRawTab('gst-data', this)">GST Data</button>
+    </div>
+
+    <!-- Tab: Invoice Data -->
+    <div id="raw-tab-invoice-data" class="raw-tab-content active">
+      <table class="modal-table" style="width:100%; margin-bottom:18px;">
+        <thead>
+          <tr>
+            <th style="width:35%;">Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="raw_invoice_data_tbody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+
+      <h2 style="margin-bottom: 12px;">Line Items</h2>
+      <table class="modal-table" style="width:100%;">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Product Code</th>
+            <th>Tax Rate</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="raw_invoice_items_tbody">
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Tab: Table Data --> 
+    <div id="raw-tab-table-data" class="raw-tab-content">
+      <h2 style="margin-bottom: 12px;">Table</h2>
+
+      <table class="modal-table" style="width:100%; margin-bottom: 18px;">
+        <thead>
+          <tr>
+            <th>item_description</th>
+            <th>item_quantity</th>
+            <th>unit_price</th>
+            <th>product_code</th>
+            <th>tax_rate</th>
+            <th>amount</th>
+            <th>qty_unitprice</th>
+            <th>qty_unit+2_rate_qty_unit</th>
+            <th>check1</th>
+          </tr>
+        </thead>
+        <tbody id="raw_table_data_tbody">
+        </tbody>
+      </table>
+
+      <div style="margin-bottom: 18px; font-size: 13px; font-weight: 600;" id="raw_table_totals"></div>
+
+      <h2 style="margin-bottom: 12px;">Check2</h2>
+      <table class="modal-table" style="width:100%; margin-bottom: 18px;">
+        <tbody>
+          <tr>
+            <td>OCR Captured Basic Amount--&gt;</td>
+            <td id="raw_check2_ocr_basic"></td>
+          </tr>
+          <tr>
+            <td>Calculated Basic Amount--&gt;[ Total of qty_unitprice column ]</td>
+            <td id="raw_check2_calculated_basic"></td>
+          </tr>
+          <tr>
+            <td>Check2</td>
+            <td id="raw_check2_status"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-bottom: 12px;">Check3</h2>
+      <table class="modal-table" style="width:100%;">
+        <tbody>
+          <tr>
+            <td>OCR Captured Total Amount--&gt;</td>
+            <td id="raw_check3_ocr_total"></td>
+          </tr>
+          <tr>
+            <td>Calculated Total Amount--&gt;[ Total of qty_unit+2_rate_qty_unit column ]</td>
+            <td id="raw_check3_calculated_total"></td>
+          </tr>
+          <tr>
+            <td>Check3</td>
+            <td id="raw_check3_status"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+    <!-- Tab: Tax Check -->
+    <div id="raw-tab-tax-check" class="raw-tab-content">
+      <h3>Tax Check</h3>
+
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Status</th>
+            <th>GST Portal Data</th>
+            <th>Invoice Data</th>
+          </tr>
+        </thead>
+        <tbody id="raw_tax_check_tbody">
+        </tbody>
+      </table>
+    </div>
+
+
+    <!-- Tab: Account Check -->
+    <div id="raw-tab-account-check" class="raw-tab-content">
+
+      <h3>Account Check</h3>
+
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Status</th>
+            <th>GST Portal Data</th>
+            <th>Invoice Data</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_account_check_tbody"></tbody>
+
+      </table>
+    </div>
+
+
+    <!-- Tab: E-Invoice Data -->
+    <div id="raw-tab-e-invoice-data" class="raw-tab-content">
+      <h3>E-Invoice Data</h3>
+
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="raw_einvoice_data_tbody"></tbody>
+      </table>
+    </div>
+
+
+    <!-- Tab: E-Way Bill Data -->
+    <div id="raw-tab-e-way-bill-data" class="raw-tab-content">
+      <h3>E-Way Bill Data</h3>
+
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Invoice</th>
+            <th>E-Way Bill</th>
+          </tr>
+        </thead>
+        <tbody id="raw_eway_comparison_tbody"></tbody>
+      </table>
+
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="raw_eway_summary_tbody"></tbody>
+      </table>
+    </div>
+
+    
+    <!-- Tab: GST Data -->
+    <div id="raw-tab-gst-data" class="raw-tab-content">
+
+      <h3>GST Data</h3>
+
+      <h4 style="margin: 12px 0 8px;">Customer GST Data</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_customer_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">Vendor GST Data</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_vendor_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">Filing Frequency</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Quarter</th>
+            <th>Preference</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_filing_frequency_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">Filing Status</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Return Type</th>
+            <th>Return Period</th>
+            <th>Status</th>
+            <th>Date Of Filing</th>
+            <th>ARN</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_filing_status_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">PAN Status</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_pan_status_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">206AB Compliance</h4>
+      <table class="modal-table" style="margin-bottom:14px;">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_206ab_tbody">
+        </tbody>
+      </table>
+
+      <h4 style="margin: 12px 0 8px;">Other GST Data</h4>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody id="raw_gst_other_tbody">
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- JS for Response section Raw Data inside Pending Action -->
+<script>
+// ======================= RAW DATA MODAL JS =======================
+window.openRawDataModal = function(invoiceId) {
+  fetch(`/invoice-raw-data/${invoiceId}/`)
+    .then(res => res.json())
+
+    .then(data => {
+
+      const result = data.result || {};
+      const checks = result.CHECKS || {};
+      const invoiceData = result.Invoice_data || {};
+      const taxCheck = checks.tax_check || {};
+      const accountCheck = checks.Account_check || {};
+      const gstData = checks.data_from_gst || {};
+      const eInvoiceData = checks["e-invoice_data"] || {};
+      const ewayBillData = checks.eway_bill_data || {};
+      
+      // Fields will be shown in this specific order in the Raw Data modal. Any fields not in this list will be ignored 
+      const fieldOrder = [
+        "Ack_No",
+        "Bank_Details",
+        "Currency",
+        "CustomerAddress",
+        "CustomerAddressRecipient",
+        "CustomerName",
+        "Cutomer Gst No.",
+        "EwayBill_No",
+        "Invoice items:",
+        "InvoiceDate",
+        "InvoiceId",
+        "InvoiceTotal",
+        "Irn_No",
+        "Payment_Term",
+        "PurchaseOrder",
+        "SubTotal",
+        "Tax Items",
+        "Tax_Invoice",
+        "TotalDiscount",
+        "TotalTax",
+        "Vendor Gst No.",
+        "VendorAddress",
+        "VendorAddressRecipient",
+        "VendorName",
+        "relevent_page",
+      ];
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+      
+      // this function converts JS values to a more readable format for the raw data modal
+      function toPythonStyle(value, quoteStrings = true) {
+        if (value === null || value === undefined) {
+          return "None";
+        }
+
+        if (Array.isArray(value)) {
+          return `[${value.map(item => toPythonStyle(item, true)).join(", ")}]`;
+        }
+
+        if (typeof value === "object") {
+          const entries = Object.entries(value).map(([key, item]) => {
+            return `'${key}': ${toPythonStyle(item, true)}`;
+          });
+          return `{${entries.join(", ")}}`;
+        }
+
+        if (typeof value === "string") {
+          return quoteStrings ? `'${value}'` : value;
+        }
+
+        return String(value);
+      }
+
+      function formatPlainValue(value) {
+        if (value === null || value === undefined || value === "") {
+          return "-";
+        }
+        return String(value);
+      }
+
+      const tbody = document.getElementById("raw_invoice_data_tbody");
+      tbody.innerHTML = "";
+
+      fieldOrder.forEach((key) => {
+        // Skip "Invoice items:" here - it will be rendered separately below
+        if (key === "Invoice items:") {
+          return;
+        }
+        const hasKey = Object.prototype.hasOwnProperty.call(invoiceData, key);
+        const rawValue = hasKey ? invoiceData[key] : null;
+        const formattedValue = toPythonStyle(rawValue, false);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${escapeHtml(key)}</td><td style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(formattedValue)}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      if (tbody.children.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#6b7280;">No invoice data available.</td></tr>';
+      }
+
+      // ================= INVOICE ITEMS RENDER =================
+      const invoiceItemsData = invoiceData["Invoice items:"] || {};
+      const itemsBody = document.getElementById("raw_invoice_items_tbody");
+      
+      if (itemsBody) {
+        itemsBody.innerHTML = "";
+        const items = Object.entries(invoiceItemsData);
+        
+        if (items.length === 0) {
+          itemsBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6b7280;">No invoice items available.</td></tr>';
+        } else {
+          items.forEach(([itemKey, item]) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(itemKey)}</td>
+              <td>${escapeHtml(formatPlainValue(item.item_description))}</td>
+              <td>${escapeHtml(formatPlainValue(item.item_quantity))}</td>
+              <td>${escapeHtml(formatPlainValue(item.unit_price))}</td>
+              <td>${escapeHtml(formatPlainValue(item.product_code))}</td>
+              <td>${escapeHtml(formatPlainValue(item.tax_rate))}</td>
+              <td>${escapeHtml(formatPlainValue(item.amount))}</td>
+            `;
+            itemsBody.appendChild(tr);
+          });
+        }
+      }
+
+      const tableBody = document.getElementById("raw_table_data_tbody");
+      const tableTotals = document.getElementById("raw_table_totals");
+      const tableRows = Array.isArray(data.table_check) ? data.table_check : [];
+
+      let totalAmount = 0;
+      let totalQtyUnitPrice = 0;
+      let totalQtyUnitPlus2Rate = 0;
+
+      tableBody.innerHTML = "";
+
+      tableRows.forEach((item) => {
+        const amount = Number(item.amount) || 0;
+        const qtyUnitPrice = Number(item.qty_unitprice) || 0;
+        const qtyUnitPlus2Rate = Number(item["qty_unit+2_rate_qty_unit"]) || 0;
+
+        totalAmount += amount;
+        totalQtyUnitPrice += qtyUnitPrice;
+        totalQtyUnitPlus2Rate += qtyUnitPlus2Rate;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(formatPlainValue(item.item_description))}</td>
+          <td>${escapeHtml(formatPlainValue(item.item_quantity))}</td>
+          <td>${escapeHtml(formatPlainValue(item.unit_price))}</td>
+          <td>${escapeHtml(formatPlainValue(item.product_code))}</td>
+          <td>${escapeHtml(formatPlainValue(item.tax_rate))}</td>
+          <td>${escapeHtml(formatPlainValue(item.amount))}</td>
+          <td>${escapeHtml(formatPlainValue(item.qty_unitprice))}</td>
+          <td>${escapeHtml(formatPlainValue(item["qty_unit+2_rate_qty_unit"]))}</td>
+          <td>${escapeHtml(formatPlainValue(item.check1))}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      if (tableRows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6b7280;">No table data available.</td></tr>';
+        tableTotals.textContent = "Total-> -  -  -";
+      } else {
+        const totalRow = document.createElement("tr");
+        totalRow.innerHTML = `
+          <td style="font-weight:700;">Total-&gt;</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>${escapeHtml(String(totalAmount))}</td>
+          <td>${escapeHtml(String(totalQtyUnitPrice))}</td>
+          <td>${escapeHtml(String(totalQtyUnitPlus2Rate))}</td>
+          <td></td>
+        `;
+        tableBody.appendChild(totalRow);
+        tableTotals.textContent = "";
+      }
+
+      const check2 = data.invoice_calculation_1 || {};
+      document.getElementById("raw_check2_ocr_basic").textContent = formatPlainValue(check2.ocr_amount);
+      document.getElementById("raw_check2_calculated_basic").textContent = tableRows.length ? String(totalQtyUnitPrice) : formatPlainValue(check2.table_sum);
+      document.getElementById("raw_check2_status").textContent = formatPlainValue(check2.status);
+
+      const check3 = data.invoice_calculation_2 || {};
+      document.getElementById("raw_check3_ocr_total").textContent = formatPlainValue(check3.ocr_total);
+      document.getElementById("raw_check3_calculated_total").textContent = tableRows.length ? String(totalQtyUnitPlus2Rate) : formatPlainValue(check3.table_sum);
+      document.getElementById("raw_check3_status").textContent = formatPlainValue(check3.status);
+      
+
+      // ================= TAX CHECK RENDER =================
+
+      const taxBody = document.getElementById("raw_tax_check_tbody");
+
+      if (taxBody) {
+        taxBody.innerHTML = "";
+
+        const entries = Object.entries(taxCheck);
+
+        if (entries.length === 0) {
+          taxBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6b7280;">No tax check data available.</td></tr>';
+        } 
+        else {
+          entries.forEach(([key, value]) => {
+            const status = value?.status ?? "-";
+            const gstPortal = value?.Gst_Portal ?? "-";
+            const invoiceVal = value?.Invoice_data ?? "-";
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+              <td>${escapeHtml(key.replaceAll("_"," "))}</td>
+              <td>${escapeHtml(formatPlainValue(status))}</td>
+              <td>${escapeHtml(formatPlainValue(gstPortal))}</td>
+              <td>${escapeHtml(formatPlainValue(invoiceVal))}</td>
+            `;
+
+            taxBody.appendChild(tr);
+          });
+        }
+      }
+
+      // ================= ACCOUNT CHECK RENDER =================
+
+      const accountCheckData = accountCheck;
+      const accountBody = document.getElementById("raw_account_check_tbody");
+
+      if (accountBody) {
+        accountBody.innerHTML = "";
+
+        Object.entries(accountCheckData).forEach(([key, value]) => {
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td>${escapeHtml(key)}</td>
+            <td>${escapeHtml(formatPlainValue(value.status))}</td>
+            <td>${escapeHtml(formatPlainValue(value.Gst_Portal))}</td>
+            <td>${escapeHtml(formatPlainValue(value.Invoice_data))}</td>
+          `;
+
+          accountBody.appendChild(tr);
+        });
+
+        if (Object.keys(accountCheckData).length === 0) {
+          accountBody.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;color:#6b7280;">No account check data available.</td></tr>';
+        }
+      }
+
+
+      // ================= E-INVOICE DATA RENDER =================
+
+      const eInvoiceBody = document.getElementById("raw_einvoice_data_tbody");
+
+      if (eInvoiceBody) {
+        eInvoiceBody.innerHTML = "";
+
+        const entries = Object.entries(eInvoiceData);
+
+        if (entries.length === 0) {
+          eInvoiceBody.innerHTML =
+            '<tr><td colspan="2" style="text-align:center;color:#6b7280;">No e-invoice data available.</td></tr>';
+        } else {
+          entries.forEach(([key, value]) => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+              <td>${escapeHtml(key.replaceAll("_", " "))}</td>
+              <td style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(toPythonStyle(value, false))}</td>
+            `;
+
+            eInvoiceBody.appendChild(tr);
+          });
+        }
+      }
+
+
+      // ================= E-WAY BILL DATA RENDER =================
+
+      const ewayCompareBody = document.getElementById("raw_eway_comparison_tbody");
+      const ewaySummaryBody = document.getElementById("raw_eway_summary_tbody");
+
+      if (ewayCompareBody) {
+        ewayCompareBody.innerHTML = "";
+
+        const compareRows = [
+          ["Invoice_No", "Invoice No"],
+          ["Total_Amount", "Total Amount"],
+          ["Vendor_Gst", "Vendor GST"],
+        ];
+
+        let compareHasData = false;
+
+        compareRows.forEach(([key, label]) => {
+          const row = ewayBillData[key] || {};
+          const invoiceVal = row.invoice;
+          const ewayVal = row["e-waybill"];
+
+          if (
+            invoiceVal !== undefined &&
+            invoiceVal !== null &&
+            invoiceVal !== "" ||
+            ewayVal !== undefined &&
+            ewayVal !== null &&
+            ewayVal !== ""
+          ) {
+            compareHasData = true;
+          }
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(label)}</td>
+            <td>${escapeHtml(formatPlainValue(invoiceVal))}</td>
+            <td>${escapeHtml(formatPlainValue(ewayVal))}</td>
+          `;
+          ewayCompareBody.appendChild(tr);
+        });
+
+        if (!compareHasData && Object.keys(ewayBillData).length === 0) {
+          ewayCompareBody.innerHTML =
+            '<tr><td colspan="3" style="text-align:center;color:#6b7280;">No e-way bill comparison data available.</td></tr>';
+        }
+      }
+
+      if (ewaySummaryBody) {
+        ewaySummaryBody.innerHTML = "";
+
+        const summaryRows = [
+          ["status", ewayBillData.status],
+          ["reason", ewayBillData.reason],
+        ];
+
+        const hasSummaryData = summaryRows.some(([, val]) => val !== undefined && val !== null && val !== "");
+
+        if (!hasSummaryData) {
+          ewaySummaryBody.innerHTML =
+            '<tr><td colspan="2" style="text-align:center;color:#6b7280;">No e-way bill summary data available.</td></tr>';
+        } else {
+          summaryRows.forEach(([key, value]) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(String(key).replaceAll("_", " "))}</td>
+              <td style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(formatPlainValue(value))}</td>
+            `;
+            ewaySummaryBody.appendChild(tr);
+          });
+        }
+      }
+
+
+      // ================= GST DATA RENDER =================
+
+      function renderKeyValueTable(tbodyId, sourceObj, emptyMessage) {
+        const body = document.getElementById(tbodyId);
+        if (!body) return;
+
+        body.innerHTML = "";
+
+        const entries = sourceObj && typeof sourceObj === "object"
+          ? Object.entries(sourceObj)
+          : [];
+
+        if (entries.length === 0) {
+          body.innerHTML = `<tr><td colspan="2" style="text-align:center;color:#6b7280;">${escapeHtml(emptyMessage)}</td></tr>`;
+          return;
+        }
+
+        entries.forEach(([key, value]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(String(key).replaceAll("_", " "))}</td>
+            <td style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(toPythonStyle(value, false))}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      const gstCustomerData = gstData.customer_gst_data || {};
+      const gstVendorData = gstData.vendor_gst_data || {};
+      const gstPanStatus = gstData.Pan_Status || {};
+      const gst206AB = gstData["206AB_Compliance"] || {};
+
+      renderKeyValueTable("raw_gst_customer_tbody", gstCustomerData, "No customer GST data available.");
+      renderKeyValueTable("raw_gst_vendor_tbody", gstVendorData, "No vendor GST data available.");
+      renderKeyValueTable("raw_gst_pan_status_tbody", gstPanStatus, "No PAN status data available.");
+      renderKeyValueTable("raw_gst_206ab_tbody", gst206AB, "No 206AB compliance data available.");
+
+      const filingFrequencyBody = document.getElementById("raw_gst_filing_frequency_tbody");
+      const filingFrequency = Array.isArray(gstData["Filing Frequency"]) ? gstData["Filing Frequency"] : [];
+
+      if (filingFrequencyBody) {
+        filingFrequencyBody.innerHTML = "";
+
+        if (filingFrequency.length === 0) {
+          filingFrequencyBody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#6b7280;">No filing frequency data available.</td></tr>';
+        } else {
+          filingFrequency.forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(formatPlainValue(row?.quarter))}</td>
+              <td>${escapeHtml(formatPlainValue(row?.preference))}</td>
+            `;
+            filingFrequencyBody.appendChild(tr);
+          });
+        }
+      }
+
+      const filingStatusBody = document.getElementById("raw_gst_filing_status_tbody");
+      const filingStatus = Array.isArray(gstData["Filing Status"]) ? gstData["Filing Status"] : [];
+
+      if (filingStatusBody) {
+        filingStatusBody.innerHTML = "";
+
+        if (filingStatus.length === 0) {
+          filingStatusBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280;">No filing status data available.</td></tr>';
+        } else {
+          filingStatus.forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${escapeHtml(formatPlainValue(row?.rtntype))}</td>
+              <td>${escapeHtml(formatPlainValue(row?.ret_prd))}</td>
+              <td>${escapeHtml(formatPlainValue(row?.status))}</td>
+              <td>${escapeHtml(formatPlainValue(row?.dof))}</td>
+              <td>${escapeHtml(formatPlainValue(row?.arn))}</td>
+            `;
+            filingStatusBody.appendChild(tr);
+          });
+        }
+      }
+
+      const knownGstKeys = new Set([
+        "customer_gst_data",
+        "vendor_gst_data",
+        "Filing Frequency",
+        "Filing Status",
+        "Pan_Status",
+        "206AB_Compliance",
+      ]);
+
+      const gstOtherData = {};
+      Object.entries(gstData).forEach(([key, value]) => {
+        if (!knownGstKeys.has(key)) {
+          gstOtherData[key] = value;
+        }
+      });
+
+      renderKeyValueTable("raw_gst_other_tbody", gstOtherData, "No other GST data available.");
+
+      document.getElementById("rawDataModal").classList.add("is-open");
+    })
+    .catch(err => {
+      console.error("Raw data modal error:", err);
+    });
+};
+
+function closeRawDataModal() {
+  document.getElementById("rawDataModal").classList.remove("is-open");
+}
+
+function showRawTab(tabId, btn) {
+  document.querySelectorAll(".raw-tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".raw-tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById("raw-tab-" + tabId).classList.add("active");
+  btn.classList.add("active");
+}
+</script>
+
  
 </body>
 </html>

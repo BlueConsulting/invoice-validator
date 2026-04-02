@@ -1,5 +1,9 @@
 from django.urls import path
 from . import views
+from .views import tax_check_view
+
+# app admin dashboard view import 
+#from .views import app_admin_dashboard
 
 
 urlpatterns = [
@@ -12,6 +16,11 @@ urlpatterns = [
     path("password-reset-done/", views.password_reset_done, name="password_reset_done"),
     path("password-reset-confirmation/", views.password_reset_sent, name="password_reset_confirmation"),
     path("superuser-dashboard/", views.superuser_dashboard, name="superuser_dashboard"),
+    # Preferred name for company owner dashboard (legacy alias above kept for compatibility)
+    path("company-admin/dashboard/", views.superuser_dashboard, name="company_admin_dashboard"),
+
+    # Added app admin dashboard URL
+    #path('app-admin/dashboard/', app_admin_dashboard, name='app_admin_dashboard'),
 
     # GST Details Management
     path("edit-gst-detail/<int:gst_id>/", views.edit_gst_detail, name="edit_gst_detail"),
@@ -26,7 +35,8 @@ urlpatterns = [
     # Download validation summary 
     path("download-validation-summary/<int:invoice_id>/", views.download_validation_summary, name="download_validation_summary"),
 
-
+    # Tax check API endpoint 
+    path('tax-check/', tax_check_view),
 
     # Edit Invoice 
     #path('invoice/<int:invoice_id>/edit/', views.edit_invoice, name='edit_invoice'),
@@ -34,6 +44,15 @@ urlpatterns = [
     
     # Get Invoice Raw Data for Modal Popup
     path('invoice-raw-data/<int:invoice_id>/', views.get_invoice_raw_data, name='invoice_raw_data'),
+
+
+    # E-Invoice Comparison API Endpoint
+    path('invoice-einvoice-comparison/<int:invoice_id>/', views.get_einvoice_comparison, name='invoice_einvoice_comparison'),
+
+
+    # Invoice Remarks (Processor) - Save and Get Remarks for Invoice Validation Parameters
+    path('invoice-remarks/', views.save_invoice_remark, name='save_invoice_remark'),
+    path('invoice-remarks/<int:invoice_id>/', views.get_invoice_remarks, name='get_invoice_remarks'),
 
 
 ]

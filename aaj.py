@@ -160,7 +160,7 @@ print(twoSum(arr, target))
 #-------------------------------------------------------------------------------------
 
 # Two Sum Problem using Hash Map
-
+'''
 def twoSum(arr, target):
 
     # step 1 : create empty dictionary
@@ -201,9 +201,13 @@ arr = [2,7,11,15]
 target = 17
 print(twoSum(arr, target))
 
+'''
+#------------------------------------------------------------------------------------------------------------------
 
 
+#Validation → forms.py
+#Business logic → views.py
+#Database structure → models.py
 
-
-
+#------------------------------------------------------------------------------------------------------------------
 

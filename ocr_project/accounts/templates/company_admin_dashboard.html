@@ -204,7 +204,8 @@
 <!-- Header -->
 <div class="header">
 
-  <h1>SuperUser Dashboard</h1>
+  <!-- <h1>SuperUser Dashboard</h1> -->
+  <h1>Company Admin Dashboard</h1>
 
   <div class="profile-menu">
 
@@ -272,7 +273,7 @@
       <div class="box">
         <h3>👤 Add User</h3>
         
-        <form method="POST" action="{% url 'superuser_dashboard' %}">
+        <form method="POST" action="{% url 'company_admin_dashboard' %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="create_user">
           
@@ -377,7 +378,7 @@
 
         <h3>📋 Add GST Registration</h3>
         
-        <form method="POST" action="{% url 'superuser_dashboard' %}" autocomplete="off">
+        <form method="POST" action="{% url 'company_admin_dashboard' %}" autocomplete="off">
 
           {% csrf_token %}
           <input type="hidden" name="action" value="add_gst">

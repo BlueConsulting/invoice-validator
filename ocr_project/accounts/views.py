@@ -7,6 +7,7 @@ from django.utils.encoding import force_bytes
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.core.cache import cache
 from django.conf import settings
@@ -14,9 +15,14 @@ from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import os
 from .forms import SignupForm, GSTDetailsForm, UserManagementForm
-from .models import CompanyDetails, Invoice, GSTDetails
+
+# For E-Invoice Comparison View
+# Change 1 for E-Invoice Register feature
+from .models import CompanyDetails, Invoice, GSTDetails, HSN, SAC, InvoiceRemark, EInvoiceRegister
+
 import random 
 from django.db import transaction
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.contrib.sites.shortcuts import get_current_site
@@ -28,6 +34,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from .models import Invoice
 import json
+import re
 from accounts.validations.invoice_mapper import run_dynamic_validations
 from accounts.validations.invoice_mapper import call_ocr_api, map_api_data_to_invoice
 
@@ -37,15 +44,25 @@ from accounts.validations.invoice_mapper import map_api_data_to_invoice
 
 
 # ====== Additional imports for data processing for modal popup for Address Matching and Invoice Calculation ===== #
-import re 
-from difflib import SequenceMatcher
+#import re 
+#from difflib import SequenceMatcher
 
 
 User = get_user_model()
 
 
+def normalize_user_role(role):
+    """Map legacy role values to current role constants."""
+    role_aliases = {
+        'SuperUser': 'COMPANY_ADMIN',
+        'Processor': 'PROCESSOR',
+    }
+    return role_aliases.get(role, role)
+
+
 
 # Helper function to normalize and compare addresses for better matching in Account Check (Customer Address)
+'''
 def normalize_address(text):
     if not text:
         return ""
@@ -62,8 +79,9 @@ def normalize_address(text):
 
     tokens = [w for w in text.split() if w not in stop_words]
     return " ".join(tokens)
+'''
 
-
+'''
 # Helper function to calculate address match percentage for Account Check (Customer Address)
 def address_match_percentage(addr1, addr2):
     addr1_norm = normalize_address(addr1)
@@ -73,10 +91,11 @@ def address_match_percentage(addr1, addr2):
         return 0
     
     return SequenceMatcher(None, addr1_norm, addr2_norm).ratio() * 100
-    
+'''   
 
+#----------------------------------------------------------------------------------------------------------------------------------------
 
-# Signup View
+# Signup View with email verification and password setup link
 @csrf_protect
 def signup(request):
     if request.method == 'POST':
@@ -92,7 +111,7 @@ def signup(request):
                         username=company.contact_person_name,
                         email=company.contact_person_email,
                         company_code=company,
-                        role='SuperUser',
+                        role='COMPANY_ADMIN',
                     )
                     user.set_unusable_password()
                     user.save()
@@ -133,7 +152,6 @@ def signup(request):
     # Initial GET request → show signup form
     form = SignupForm()
     return render(request, 'signup.html', {'form': form})
-
 
 
 # Password Reset View
@@ -194,25 +212,29 @@ def loginview(request):
             user = None
         
         if user is not None:
+            role = normalize_user_role(user.role)
+
+            # Force admin users through Django admin login page instead of auto-signing
+            # them in via the custom application login flow.
+            if user.is_superuser or user.is_staff or role == 'APP_ADMIN':
+                logout(request)
+                return redirect('/admin/login/?next=/admin/')
+
             login(request, user)
             request.session["company_code"] = user.company_code_id
             next_url = request.GET.get('next')
             if next_url:
                 return redirect(next_url)
-            
 
-            # Redirect based on role: SuperUser goes to admin dashboard, all others go to user dashboard
-            if user.role == 'SuperUser':
-                return redirect('superuser_dashboard')
+            if role == 'COMPANY_ADMIN':
+                return redirect('company_admin_dashboard')
             else:
-                # All regular users (Uploader, Checker, Processor) go to user dashboard
                 return redirect('user_dashboard')
         else:
             error_message = "Entered credentials are incorrect. Please enter correct credentials."
             return render(request, 'login.html', {'error': error_message})
          
     return render(request, 'login.html')
-
 
 
 # logout View
@@ -222,11 +244,9 @@ def logoutview(request):
     return redirect('login')
 
 
-
 # Password Reset Sent View
 def password_reset_sent(request):
     return render(request, "password_reset_sent.html")
-
 
 
 # Password Reset Done View
@@ -234,8 +254,27 @@ def password_reset_done(request):
     return render(request, "password_reset_done.html")
 
 
+# Added this dashboard but currently not using it as using django admin for app admin for better
+# security and less development time but keeping this code ready for future if we want to build
+
+'''
+from django.http import HttpResponseForbidden
+@login_required
+def app_admin_dashboard(request):
+    if request.user.role != 'APP_ADMIN':
+        return HttpResponseForbidden("Not allowed")
+
+    total_companies = CompanyDetails.objects.count()
+    total_users = User.objects.count()
+
+    return render(request, 'app_admin_dashboard.html', {
+        'total_companies': total_companies,
+        'total_users': total_users,
+    })
+'''
 
 # SuperUser Dashboard View
+from django.http import HttpResponseForbidden
 @login_required
 def superuser_dashboard(request):
     """
@@ -243,6 +282,10 @@ def superuser_dashboard(request):
     1. User Management (Create users)
     2. GST Details Management (Add/Edit GST registrations)
     """
+
+    role = normalize_user_role(getattr(request.user, 'role', ''))
+    if role != 'COMPANY_ADMIN':
+        return HttpResponseForbidden("Not allowed")
     
     # Handle POST requests for both User Creation and GST Details
     if request.method == 'POST':
@@ -256,7 +299,7 @@ def superuser_dashboard(request):
                     user = user_form.save(commit=False, company=request.user.company_code)
                     user.save()
                     messages.success(request, f'User {user.username} created successfully!')
-                    response = redirect('superuser_dashboard')
+                    response = redirect('company_admin_dashboard')
                     response['Location'] = response['Location'] + '?section=users'
                     return response
                 except Exception as e:
@@ -277,7 +320,7 @@ def superuser_dashboard(request):
                     gst_detail.created_by = request.user
                     gst_detail.save()
                     messages.success(request, f'GST Details for {gst_detail.state} added successfully!')
-                    response = redirect('superuser_dashboard')
+                    response = redirect('company_admin_dashboard')
                     response['Location'] = response['Location'] + '?section=settings'
                     return response
                 except Exception as e:
@@ -289,12 +332,20 @@ def superuser_dashboard(request):
                         messages.error(request, f'{field}: {error}')
     
 
-    # Fetch all users from the same company
-    users = User.objects.filter(company_code=request.user.company_code).order_by('-date_joined')
-    
+    # Fetch all users and GST records from the same company using stable id lookup.
+    company_id = getattr(request.user, 'company_code_id', None)
+    if not company_id:
+        session_company_id = request.session.get('company_code')
+        try:
+            company_id = int(session_company_id) if session_company_id else None
+        except (TypeError, ValueError):
+            company_id = None
 
-    # Fetch all GST details for the company
-    gst_details = GSTDetails.objects.filter(company=request.user.company_code).order_by('state')
+    users = User.objects.none()
+    gst_details = GSTDetails.objects.none()
+    if company_id:
+        users = User.objects.filter(company_code_id=company_id).order_by('-date_joined')
+        gst_details = GSTDetails.objects.filter(company_id=company_id).order_by('state')
     
 
     # Create empty forms for the template
@@ -303,7 +354,9 @@ def superuser_dashboard(request):
     
 
     context = {
-        'user_role': getattr(request.user, 'role', 'SuperUser'),
+        #'user_role': getattr(request.user, 'role', 'SuperUser'),
+        'user_role': role,
+
         'company': getattr(request.user, 'company_code', None),
         'users': users,
         'gst_details': gst_details,
@@ -311,10 +364,12 @@ def superuser_dashboard(request):
         'gst_form': gst_form,
     }
 
-    return render(request, 'superuser_dashboard.html', context)
+    #return render(request, 'superuser_dashboard.html', context)
+    return render(request, 'company_admin_dashboard.html', context) #
 
 
-# User Dashboard View
+
+# User Dashboard View with sections
 @login_required
 def user_dashboard(request):
     """
@@ -328,26 +383,43 @@ def user_dashboard(request):
     section = request.GET.get('section', 'upload')
 
     # Base queryset (company-level isolation)
-    invoices_qs = Invoice.objects.filter(
-        company=request.user.company_code
-    ).order_by('-upload_date')
+    # Resolve company from stable id first, then keep session in sync.
+    company_obj = None
+    company_id = getattr(request.user, "company_code_id", None)
+
+    if not company_id:
+        session_company_id = request.session.get("company_code")
+        try:
+            company_id = int(session_company_id) if session_company_id else None
+        except (TypeError, ValueError):
+            company_id = None
+
+    if company_id:
+        company_obj = CompanyDetails.objects.filter(pk=company_id).first()
+        if company_obj and request.session.get("company_code") != company_obj.pk:
+            request.session["company_code"] = company_obj.pk
+
+    invoices_qs = Invoice.objects.none()
+    if company_obj is not None:
+        invoices_qs = Invoice.objects.filter(
+            company=company_obj
+        ).order_by('-upload_date')
 
     
     #-------------------------------------------------------------------------------------------
     # Summary Counts for dashboard cards 
     # we are doing separate counts for each status to show on dashboard
     # invoices_qs is base queryset for all invoices of the company
-    pending_count = invoices_qs.filter(status='Standing').count()
-    hold_count = invoices_qs.filter(status='Hold').count()
-    rejected_count = invoices_qs.filter(status='Rejected').count()
-    approved_count = invoices_qs.filter(status='Approved').count()
+    pending_count = invoices_qs.filter(Q(status__iexact='Standing') | Q(status__iexact='Pending')).count()
+    hold_count = invoices_qs.filter(status__iexact='Hold').count()
+    rejected_count = invoices_qs.filter(status__iexact='Rejected').count()
+    approved_count = invoices_qs.filter(status__iexact='Approved').count()
     
 
     # we are not showing accounter count as of now on dashboard as per new BRD but keeping the code ready for future if we need to show it later
     # change 1 for accounted status 
     #accounted_count = invoices_qs.filter(status='Accounted').count()
     #-------------------------------------------------------------------------------------------
-
 
 
     # Get filter values
@@ -364,17 +436,27 @@ def user_dashboard(request):
     response_prefix = request.GET.get('response_prefix', '')
     file_prefix = request.GET.get('file_prefix', '')
 
+    # Avoid cross-tab stale status filters hiding data on refresh.
+    normalized_status_for_section = {
+        'pending': {'standing', 'pending'},
+        'hold': {'hold'},
+        'rejected': {'rejected'},
+        'approved': {'approved'},
+    }
+    allowed_status_values = normalized_status_for_section.get(section)
+    if allowed_status_values and status_prefix and status_prefix.strip().lower() not in allowed_status_values:
+        status_prefix = ''
+
 
     # Invoice Upload Limit Logic for USAGE METER CARD on dashboard - max 50 invoices per company as per BRD and show remaining usage
     
     MAX_INVOICES = 50
 
-    user_invoice_count = Invoice.objects.filter(
-        uploaded_by=request.user
-    ).count()
+    # Usage limit is company-wide, not per-uploader.
+    user_invoice_count = invoices_qs.count()
 
-    remaining_invoices = MAX_INVOICES - user_invoice_count
-    usage_percentage = (user_invoice_count / MAX_INVOICES) * 100
+    remaining_invoices = max(0, MAX_INVOICES - user_invoice_count)
+    usage_percentage = min(100, (user_invoice_count / MAX_INVOICES) * 100)
 
     
     # Filtering logic
@@ -396,7 +478,11 @@ def user_dashboard(request):
             qs = qs.filter(invoice_date__lte=to_date)
 
         if status_prefix:
-            qs = qs.filter(status__istartswith=status_prefix)
+            # Backward compatibility: old UI/query params used "Pending" while DB stores "Standing".
+            normalized_status = {
+                'pending': 'Standing',
+            }.get(status_prefix.strip().lower(), status_prefix)
+            qs = qs.filter(status__iexact=normalized_status)
 
         if response_prefix:
             qs = qs.filter(response__istartswith=response_prefix)
@@ -430,22 +516,22 @@ def user_dashboard(request):
 
     # 🔽 Section-wise data
     pending_invoices = paginate(
-        apply_filters(invoices_qs.filter(status='Standing')),
+        apply_filters(invoices_qs.filter(Q(status__iexact='Standing') | Q(status__iexact='Pending'))),
         'pending_page'
     )
 
     hold_invoices = paginate(
-        apply_filters(invoices_qs.filter(status='Hold')),
+        apply_filters(invoices_qs.filter(status__iexact='Hold')),
         'hold_page'
     )
 
     rejected_invoices = paginate(
-        apply_filters(invoices_qs.filter(status='Rejected')),
+        apply_filters(invoices_qs.filter(status__iexact='Rejected')),
         'rejected_page'
     )
 
     approved_invoices = paginate(
-        apply_filters(invoices_qs.filter(status='Approved')),
+        apply_filters(invoices_qs.filter(status__iexact='Approved')),
         'approved_page'
     )
 
@@ -503,10 +589,11 @@ def user_dashboard(request):
     return render(request, 'user_dashboard.html', context)
 
 
+#--------------------------------------------------------------------------------------------------------------------------------------------
 
+# Invoice Views 
 # Upload Invoice View
 # this view is handling the file upload and also mapping the extracted data to invoice model using the map_api_data_to_invoice function 
-
 @login_required
 @csrf_protect
 def upload_invoice(request):
@@ -576,11 +663,24 @@ def upload_invoice(request):
             #Replace This Line:
             #from validations.invoice_mapper import call_ocr_api
 
+
             # Get absolute file path (IMPORTANT)
             absolute_path = fs.path(filename)
 
-            # Call real OCR API
-            ocr_response = call_ocr_api(absolute_path)
+
+            # Registered company PAN from signup form (CompanyDetails.pan)
+            # Added company PAN Extraction before API call
+            # step 2 : to get company PAN from signup form and pass to API
+            company_pan = None
+            if getattr(request.user, "company_code", None):
+                company_pan = request.user.company_code.pan
+
+
+            # Call real OCR API 
+            print("Company PAN being sent to OCR API:", company_pan)
+            # We are passing company PAN to OCR API as well for better accuracy 
+            # step 3 : to get company PAN from signup form and pass to API
+            ocr_response = call_ocr_api(absolute_path, company_pan=company_pan)
             
 
             if ocr_response:
@@ -592,7 +692,7 @@ def upload_invoice(request):
             else:
                 # Keep visible in Pending Action even on OCR failure
                 invoice.status = "Standing"
-                invoice.response = "OCR API failed (pending manual review)"
+                invoice.response = "OCR failed (manual review needed)"
                 invoice.save()
          
         if uploaded_count > 0:
@@ -641,6 +741,363 @@ def update_invoice_status(request, invoice_id):
     return redirect('user_dashboard')
 
 
+
+# Helper function to normalize keys for Invoice Remarks to ensure consistent 
+# storage and retrieval regardless of user input variations in the modal popup for remarks 
+def _normalize_remark_key(value):
+    text = (value or '').strip().lower()
+    text = re.sub(r'[^a-z0-9]+', '_', text)
+    return text.strip('_')
+
+
+# E-Invoice Comparison View - Compare OCR extracted data with EInvoiceRegister database
+@login_required
+def get_einvoice_comparison(request, invoice_id):
+    """
+    Returns E-Invoice comparison data:
+    - Uploaded Invoice data from raw_ocr_response
+    - Govt Data from EInvoiceRegister table
+    - Match status for each field
+    """
+    try:
+        invoice = get_object_or_404(
+            Invoice,
+            id=invoice_id,
+            company=request.user.company_code,
+        )
+
+        def _clean(value):
+            if value is None:
+                return ""
+            if isinstance(value, datetime):
+                return value.strftime("%d/%m/%Y")
+            return str(value).strip()
+
+        def _normalize_date(value):
+            text = _clean(value)
+            if not text:
+                return ""
+            text = text.replace("-", "/").replace(".", "/")
+            parts = text.split("/")
+            if len(parts) == 3 and len(parts[0]) == 4:
+                return f"{parts[2].zfill(2)}/{parts[1].zfill(2)}/{parts[0]}"
+            return text
+
+        def _normalize_amount(value):
+            text = _clean(value)
+            if not text:
+                return ""
+            return text.replace(",", "").replace("₹", "").strip()
+
+        def _normalize_gstin(value):
+            text = _clean(value).upper()
+            return re.sub(r"[^A-Z0-9]", "", text)
+
+        ocr_data = invoice.raw_ocr_response or {}
+        invoice_data = ocr_data.get("result", {}).get("Invoice_data", {})
+
+        # Extract key fields from OCR
+        ocr_fields = {
+            "Supplier GSTIN": _clean(invoice_data.get("Vendor Gst No.")),
+            "Document Number": _clean(invoice_data.get("InvoiceId")),
+            "Document Date": _clean(invoice_data.get("InvoiceDate")),
+            "Invoice Amount": _clean(invoice_data.get("InvoiceTotal")),
+            "IRN": _clean(invoice_data.get("Irn_No")),
+            "IRN Status": "",
+            "Ack No": "",
+        }
+
+        # Try to find matching E-Invoice Register record by IRN
+        irn = _clean(ocr_fields.get("IRN"))
+        supplier_gstin = _normalize_gstin(ocr_fields.get("Supplier GSTIN"))
+        document_number = _clean(ocr_fields.get("Document Number"))
+        einvoice_record = None
+        match_basis = "none"
+        comparison_data = []
+
+        if irn:
+            try:
+                einvoice_record = EInvoiceRegister.objects.get(irn=irn)
+                match_basis = "irn"
+            except EInvoiceRegister.DoesNotExist:
+                einvoice_record = None
+
+        # Fallback 1: Supplier GSTIN + Document Number
+        if einvoice_record is None and supplier_gstin and document_number:
+            gstin_candidates = EInvoiceRegister.objects.filter(document_number__iexact=document_number)
+            for candidate in gstin_candidates:
+                if _normalize_gstin(candidate.supplier_gstin) == supplier_gstin:
+                    einvoice_record = candidate
+                    match_basis = "gstin_document"
+                    break
+
+        # Fallback 2: Supplier GSTIN only (soft validation)
+        if einvoice_record is None and supplier_gstin:
+            gstin_candidates = EInvoiceRegister.objects.order_by("-irn_date")
+            for candidate in gstin_candidates:
+                if _normalize_gstin(candidate.supplier_gstin) == supplier_gstin:
+                    einvoice_record = candidate
+                    match_basis = "gstin"
+                    break
+
+        # Build comparison table
+        fields_to_compare = [
+            ("Supplier GSTIN", "supplier_gstin"),
+            ("Document Number", "document_number"),
+            ("Document Date", "document_date"),
+            ("Invoice Amount", "amount"),
+            ("IRN", "irn"),
+            ("IRN Status", "irn_status"),
+            ("Ack No", "ack_no"),
+        ]
+
+        for field_label, db_field in fields_to_compare:
+            uploaded_value = _clean(ocr_fields.get(field_label))
+            govt_value = ""
+            # match_status = "Review"
+            match_status = "Mismatch"
+            
+
+            if einvoice_record:
+                db_value = getattr(einvoice_record, db_field, "")
+                govt_value = _clean(db_value)
+
+                # Compare values
+                uploaded_compare = uploaded_value.lower()
+                govt_compare = govt_value.lower()
+
+                if field_label == "Document Date":
+                    uploaded_compare = _normalize_date(uploaded_value).lower()
+                    govt_compare = _normalize_date(govt_value).lower()
+
+                elif field_label == "Invoice Amount":
+                    uploaded_compare = _normalize_amount(uploaded_value)
+                    govt_compare = _normalize_amount(govt_value)
+
+                if uploaded_compare == govt_compare and uploaded_compare:
+                    match_status = "Matched"
+
+                elif field_label == "Invoice Amount" and uploaded_value and govt_value:
+                    # For amounts, allow small tolerance
+                    try:
+                        uploaded_amt = Decimal(_normalize_amount(uploaded_value))
+                        govt_amt = Decimal(_normalize_amount(govt_value))
+                        if abs(uploaded_amt - govt_amt) <= Decimal("1"):
+                            match_status = "Matched"
+                    except Exception:
+                        pass
+
+                elif field_label == "Document Date" and uploaded_value and govt_value:
+                    # For dates, normalize formats
+                    if _normalize_date(uploaded_value) == _normalize_date(govt_value):
+                        match_status = "Matched"
+
+                elif not uploaded_value or not govt_value:
+                    #match_status = "Not Available"
+                    match_status = "Missing"
+            else:
+                # No E-Invoice record found
+                govt_value = "-"
+                match_status = "Not Found"
+
+
+            if field_label == "Supplier GSTIN" and supplier_gstin and match_basis == "gstin":
+                # Soft signal for user: GSTIN exists in register even if other fields need review.
+                #match_status = "Present in Register"
+                match_status = "Matched"
+
+
+            comparison_data.append({
+                "field_name": field_label,
+                "uploaded_value": uploaded_value or "-",
+                "govt_value": govt_value or "-",
+                "match_status": match_status,
+            })
+
+
+        if match_basis == "irn":
+            simple_message = "Matched using IRN."
+
+        elif match_basis == "gstin_document":
+            simple_message = "Matched using Supplier GSTIN and Document Number."
+
+        elif match_basis == "gstin":
+            simple_message = "Supplier GSTIN is present in E-Invoice Register. Other fields are shown for review."
+
+        else:
+            simple_message = "No direct E-Invoice record found. Please review uploaded values."
+        
+
+        summary = {
+            "matched": 0,
+            "mismatch": 0,
+            "missing": 0,
+        }
+
+        for row in comparison_data:
+            if row["match_status"] == "Matched":
+                summary["matched"] += 1
+            elif row["match_status"] == "Mismatch":
+                summary["mismatch"] += 1
+            elif row["match_status"] == "Missing":
+                summary["missing"] += 1
+
+        return JsonResponse({
+            "success": True,
+            "record_found": einvoice_record is not None,
+            "match_basis": match_basis,
+            "simple_message": simple_message,
+            "comparison_data": comparison_data,
+            "summary": summary,
+        })
+
+
+    except Exception as e:
+        print(f"E-Invoice comparison error: {str(e)}")
+        return JsonResponse({
+            "success": False,
+            "error": str(e),
+        }, status=500)
+
+
+
+# Save Invoice Remark View for Processor Role to save Remarks per Invoice 
+# This view will be called from frontend when processor adds remark for any validation paramater 
+# in modal popup and we are saving those remarks in InvoiceRemark model with relation to invoice
+# and also returning the saved remark in response to show updated remark in modal without refresh
+@login_required
+@require_http_methods(["POST"])
+def save_invoice_remark(request):
+    role = normalize_user_role(getattr(request.user, 'role', ''))
+    if role != 'PROCESSOR':
+        return JsonResponse({'error': 'Only Processor can save remarks.'}, status=403)
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON payload.'}, status=400)
+
+    invoice_id = payload.get('invoice_id')
+    section = _normalize_remark_key(payload.get('section'))
+    subsection = _normalize_remark_key(payload.get('subsection'))
+    parameter_key = _normalize_remark_key(payload.get('parameter_key'))
+    remark_text = (payload.get('remark') or '').strip()
+
+    if not all([invoice_id, section, subsection, parameter_key]):
+        return JsonResponse({'error': 'Missing required fields.'}, status=400)
+
+    invoice = get_object_or_404(
+        Invoice,
+        id=invoice_id,
+        company=request.user.company_code,
+    )
+
+    remark_obj, created = InvoiceRemark.objects.get_or_create(
+        invoice=invoice,
+        section=section,
+        subsection=subsection,
+        parameter_key=parameter_key,
+        defaults={
+            'remark': remark_text,
+            'created_by': request.user,
+            'updated_by': request.user,
+        },
+    )
+
+    if not created:
+        remark_obj.remark = remark_text
+        remark_obj.updated_by = request.user
+        remark_obj.save(update_fields=['remark', 'updated_by', 'updated_at'])
+
+    return JsonResponse({
+        'message': 'Remark saved successfully.',
+        'remark': {
+            'invoice_id': invoice.id,
+            'section': remark_obj.section,
+            'subsection': remark_obj.subsection,
+            'parameter_key': remark_obj.parameter_key,
+            'remark': remark_obj.remark,
+            'updated_at': remark_obj.updated_at,
+        }
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_invoice_remarks(request, invoice_id):
+    invoice = get_object_or_404(
+        Invoice,
+        id=invoice_id,
+        company=request.user.company_code,
+    )
+
+    section = _normalize_remark_key(request.GET.get('section'))
+    remarks_qs = InvoiceRemark.objects.filter(invoice=invoice)
+    if section:
+        remarks_qs = remarks_qs.filter(section=section)
+
+    remarks = [
+        {
+            'section': item.section,
+            'subsection': item.subsection,
+            'parameter_key': item.parameter_key,
+            'remark': item.remark,
+            'updated_at': item.updated_at,
+        }
+        for item in remarks_qs
+    ]
+
+    return JsonResponse({'invoice_id': invoice.id, 'remarks': remarks})
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # -----======================== MODAL POPUP INVOICE BUTTON FUNCTIONALITY ========================-----
 # In this view we will get the raw data from session and return as JsonResponse
 # Get Invoice Raw Data View for Modal Popup
@@ -664,6 +1121,8 @@ def get_invoice_raw_data(request, invoice_id):
 
     # USE DATABASE STORED OCR JSON
     data = invoice.raw_ocr_response or {}
+    invoice_meta = data.get("result", {}).get("Invoice_data", {})
+    invoice_items = invoice_meta.get("Invoice items:", {}) or {}
 
 
     
@@ -680,6 +1139,8 @@ def get_invoice_raw_data(request, invoice_id):
         table_check_list = []
 
     TABLE_LINE_TOLERANCE = Decimal("1")
+    invoice_meta = data.get("result", {}).get("Invoice_data", {})
+    invoice_items = invoice_meta.get("Invoice items:", {}) or {}
 
     def to_decimal(val):
         if val is None:
@@ -798,13 +1259,8 @@ def get_invoice_raw_data(request, invoice_id):
     # ===== 2. PARTIAL DATA (for Invoice Button - Name & Address) ===== #
     customer_name = account_check.get("Customer_Name", {})
     customer_address = account_check.get("Customer_Adress", {})
-    
-    # Address matching logic for status 
     gst_address_text = customer_address.get("Gst_Portal", "")
     invoice_address_text = customer_address.get("Invoice_data", "")
-
-    match_percent = address_match_percentage(gst_address_text, invoice_address_text)
-    address_status = "Matched" if match_percent >= 60 else "Not Matched"
 
     account_check_data = {
         "customer_name": {
@@ -815,8 +1271,8 @@ def get_invoice_raw_data(request, invoice_id):
         "customer_address": {
             "gst_portal": gst_address_text or "-",
             "invoice_data": invoice_address_text or "-",
-            "status": address_status,
-            "match_percentage": round(match_percent, 2)
+            "status": customer_address.get("status", "-"),
+            "match_percentage": customer_address.get("match_percentage", "-")
         }
     }
 
@@ -898,6 +1354,40 @@ def get_invoice_raw_data(request, invoice_id):
     }
 
 
+    # ============================= Tax Should Be Charged (HSN/SAC Lookup) =========================== #
+
+    selected_product_code = ""
+    for item in table_check_list:
+        if not isinstance(item, dict):
+            continue
+        candidate_code = get_normalized_text(item.get("product_code"))
+        if candidate_code:
+            selected_product_code = candidate_code
+            break
+
+    hsn_match = HSN.objects.filter(hsn_code=selected_product_code).first() if selected_product_code else None
+    sac_match = SAC.objects.filter(sac_code=selected_product_code).first() if selected_product_code else None
+
+    tax_should_be_charged = {
+        "product_code": selected_product_code or None,
+        "tax_rate": None,
+        "block_credit": None,
+        "rcm": None,
+    }
+
+    if hsn_match:
+        tax_should_be_charged.update({
+            "tax_rate": hsn_match.tax_rate,
+            "block_credit": hsn_match.block_credit,
+            "rcm": hsn_match.rcm,
+        })
+    elif sac_match:
+        tax_should_be_charged.update({
+            "tax_rate": sac_match.tax_rate,
+            "block_credit": sac_match.block_credit,
+            "rcm": sac_match.rcm,
+        })
+
     # ============================= PAN CHECK =========================== #
     tax_check_raw = data.get("result", {}).get("CHECKS", {}).get("tax_check", {})
 
@@ -963,6 +1453,7 @@ def get_invoice_raw_data(request, invoice_id):
     return JsonResponse(response_data, safe=False)
 '''
 
+
 # 2nd version of get_invoice_raw_data view
 @login_required
 def get_invoice_raw_data(request, invoice_id):
@@ -979,6 +1470,8 @@ def get_invoice_raw_data(request, invoice_id):
     )
 
     data = invoice.raw_ocr_response or {}
+    invoice_meta = data.get("result", {}).get("Invoice_data", {})
+    invoice_items = invoice_meta.get("Invoice items:", {}) or {}
     
     # ==================================== Invoice Calculation 1 Data Extraction ==================================== #
 
@@ -1010,7 +1503,40 @@ def get_invoice_raw_data(request, invoice_id):
         return None
 
 
-    def compute_line_fields(item):
+    def get_normalized_text(value):
+        if value is None:
+            return ""
+        text = str(value).strip()
+        if text in {"", "-", "--", "N/A", "n/a", "null", "None"}:
+            return ""
+        return text
+
+    def pick_product_code(item, fallback_item=None):
+        candidate_keys = [
+            "product_code", "productCode", "Product_Code", "Product Code",
+            "hsn_code", "HSN_Code", "HSN Code", "hsn", "HSN",
+            "hsn_sac", "HSN/SAC", "HSN/SAC Code",
+            "sac", "sac_code", "SAC", "SAC_Code",
+            "item_hsn", "item_hsn_code", "item_code", "code",
+        ]
+
+        for key in candidate_keys:
+            value = get_normalized_text(item.get(key))
+            if value:
+                return value
+
+        if isinstance(fallback_item, dict):
+            for key in candidate_keys:
+                value = get_normalized_text(fallback_item.get(key))
+                if value:
+                    return value
+
+        return ""
+
+    def compute_line_fields(item, row_index):
+        invoice_item_fallback = invoice_items.get(f"item#{row_index + 1}", {}) if isinstance(invoice_items, dict) else {}
+        item["product_code"] = pick_product_code(item, invoice_item_fallback)
+
         qty = to_decimal(item.get("item_quantity"))
         unit = to_decimal(item.get("unit_price"))
         amount = to_decimal(item.get("amount"))
@@ -1067,8 +1593,8 @@ def get_invoice_raw_data(request, invoice_id):
 
 
     # Apply calculation to each row
-    for item in table_check_list:
-        compute_line_fields(item)
+    for idx, item in enumerate(table_check_list):
+        compute_line_fields(item, idx)
 
 
     # ---------------- Invoice Level Basic Amount Comparison ---------------- #
@@ -1079,8 +1605,6 @@ def get_invoice_raw_data(request, invoice_id):
         line_total = to_decimal(item.get("qty_unitprice"))
         if line_total is not None:
             table_sum_dec += line_total
-
-    invoice_meta = data.get("result", {}).get("Invoice_data", {})
 
     ocr_amount_dec = to_decimal(invoice_meta.get("SubTotal"))
 
@@ -1113,28 +1637,59 @@ def get_invoice_raw_data(request, invoice_id):
             "invoice_data": param.get("Invoice_data", ""),
             "status": param.get("status", "")
         }
-
+        
+        
     account_check_full = {
-        "Complete_Invoice": extract_account_param("Complete_Invoice"),
+        
+        # not showing in frontend as per new BRD but keeping the code ready if we need to show it later 
+        #"Complete_Invoice": extract_account_param("Complete_Invoice"),
+
         "Customer_Adress": extract_account_param("Customer_Adress"),
         "Customer_Name": extract_account_param("Customer_Name"),
-        "Invoice_Blocked_Credit": extract_account_param("Invoice_Blocked_Credit"),
+        
+        # not showing in frontend as per new BRD but keeping the code ready if we need to show it later
+        #"Invoice_Blocked_Credit": extract_account_param("Invoice_Blocked_Credit"),
+
         "Invoice_Date": extract_account_param("Invoice_Date"),
         "Invoice_Number": extract_account_param("Invoice_Number"),
-        "Invoice_RCM-Services": extract_account_param("Invoice_RCM-Services"),
+
+        # not showing in frontend as per new BRD but keeping the code ready if we need to show it later
+        #"Invoice_RCM-Services": extract_account_param("Invoice_RCM-Services"),  
+
         "Pre_year": extract_account_param("Pre_year"),
         "gstnumber_gstcharged": extract_account_param("gstnumber_gstcharged"),
         "valid_invoice": extract_account_param("valid_invoice")
     }
 
+    #--------------------------------------------------------------------------------------
+    # Fallback for GST charged row when Account_check fields are blank.
+    # showing Gst number Gst charged in frontend using full json data using fallback logic because it is not important that 
+    # it can always come from Account_check, we can show it from other place if it is missing in Account_check and it is important 
+    # field for user to see in frontend for better clarity and decision making. So added fallback logic to show it from other place
+    # if it is missing in Account_check. We can do this for other fields as well in future if needed.
+    gst_charged = account_check_full.get("gstnumber_gstcharged", {})
+    if not gst_charged.get("gst_portal"):
+        gst_charged["gst_portal"] = (
+            data.get("result", {})
+            .get("CHECKS", {})
+            .get("data_from_gst", {})
+            .get("vendor_gst_data", {})
+            .get("Gstin", "")
+        )
+
+    if not gst_charged.get("invoice_data"):
+        gst_charged["invoice_data"] = (
+            account_check.get("Vendor_Gst_mentioned", {}).get("Invoice_data", "")
+            or invoice_meta.get("Vendor Gst No.", "")
+        )
+    
+    #--------------------------------------------------------------------------------------
+
     customer_name = account_check.get("Customer_Name", {})
-    customer_address = account_check.get("Customer_Adress", {})
+    customer_address = account_check.get("Customer_Adress", {}) 
 
     gst_address_text = customer_address.get("Gst_Portal", "")
     invoice_address_text = customer_address.get("Invoice_data", "")
-
-    match_percent = address_match_percentage(gst_address_text, invoice_address_text)
-    address_status = "Matched" if match_percent >= 60 else "Not Matched"
 
     account_check_data = {
         "customer_name": {
@@ -1145,8 +1700,8 @@ def get_invoice_raw_data(request, invoice_id):
         "customer_address": {
             "gst_portal": gst_address_text or "-",
             "invoice_data": invoice_address_text or "-",
-            "status": address_status,
-            "match_percentage": round(match_percent, 2)
+            "status": customer_address.get("status", "-"),
+            "match_percentage": customer_address.get("match_percentage", "-")
         }
     }
 
@@ -1192,6 +1747,40 @@ def get_invoice_raw_data(request, invoice_id):
             "status": ic2_status
         }
     }
+
+    # ============================= Tax Should Be Charged (HSN/SAC Lookup) =========================== #
+
+    selected_product_code = ""
+    for item in table_check_list:
+        if not isinstance(item, dict):
+            continue
+        candidate_code = get_normalized_text(item.get("product_code"))
+        if candidate_code:
+            selected_product_code = candidate_code
+            break
+
+    hsn_match = HSN.objects.filter(hsn_code=selected_product_code).first() if selected_product_code else None
+    sac_match = SAC.objects.filter(sac_code=selected_product_code).first() if selected_product_code else None
+
+    tax_should_be_charged = {
+        "product_code": selected_product_code or None,
+        "tax_rate": None,
+        "block_credit": None,
+        "rcm": None,
+    }
+
+    if hsn_match:
+        tax_should_be_charged.update({
+            "tax_rate": hsn_match.tax_rate,
+            "block_credit": hsn_match.block_credit,
+            "rcm": hsn_match.rcm,
+        })
+    elif sac_match:
+        tax_should_be_charged.update({
+            "tax_rate": sac_match.tax_rate,
+            "block_credit": sac_match.block_credit,
+            "rcm": sac_match.rcm,
+        })
 
     # ============================= PAN CHECK =========================== #
 
@@ -1243,6 +1832,7 @@ def get_invoice_raw_data(request, invoice_id):
         "account_check": account_check_data,
         "account_check_full": account_check_full,
         "tax_check": tax_check_data,
+        "tax_should_be_charged": tax_should_be_charged,
         "pan_check": pan_check_data,
         "other_parameter_check": other_parameter_check,
         "table_check": table_check_list,
@@ -1253,6 +1843,76 @@ def get_invoice_raw_data(request, invoice_id):
 
 
 
+# Tax Check API View (for Tax button in modal popup, separate API for better modularity and performance)
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+import json
+@api_view(["POST"])
+def tax_check_view(request):
+
+    data = request.data or {}
+    
+    # STEP 1: Extract Table_Check_data
+    table_data = data.get("table_data", {})
+    table_check_string = table_data.get("Table_Check_data")
+
+    # Convert string → list
+    try:
+        table_items = json.loads(table_check_string)
+    except:
+        return Response({"error": "Invalid Table_Check_data"})
+
+    # ✅ STEP 2: Check empty
+    if not table_items:
+        return Response({"error": "No items found"})
+
+    # ✅ STEP 3: Take ONLY first item
+    first_item = table_items[0]
+    product_code = first_item.get("product_code")
+
+    if not product_code:
+        return Response({"error": "Product code not found"})
+
+    product_code = str(product_code).strip()
+
+    # ✅ STEP 4: Search in HSN
+    hsn = HSN.objects.filter(hsn_code=product_code).first()
+
+    if hsn:
+        return Response({
+            "tax_should_be_charged": {
+                "product_code": product_code,
+                "tax_rate": hsn.tax_rate,
+                "block_credit": hsn.block_credit,
+                "rcm": hsn.rcm
+            }
+        })
+
+    # ✅ STEP 5: Search in SAC
+    sac = SAC.objects.filter(sac_code=product_code).first()
+
+    if sac:
+        return Response({
+            "tax_should_be_charged": {
+                "product_code": product_code,
+                "tax_rate": sac.tax_rate,
+                "block_credit": sac.block_credit,
+                "rcm": sac.rcm
+            }
+        })
+
+    # ✅ STEP 6: Not found
+    return Response({
+        "tax_should_be_charged": {
+            "product_code": product_code,
+            "tax_rate": None,
+            "block_credit": None,
+            "rcm": None
+        }
+    })
+
+
+    
 # Download Validation Summary View
 # This view generates and serves an Excel file summarizing the validation checks for a given invoice
 # 2nd version with dynamic summary data population and improved formatting 
@@ -1440,7 +2100,7 @@ def edit_gst_detail(request, gst_id):
         if form.is_valid():
             form.save()
             messages.success(request, f'GST Details for {gst_detail.state} updated successfully!')
-            response = redirect('superuser_dashboard')
+            response = redirect('company_admin_dashboard')
             response['Location'] = response['Location'] + '?section=settings'
             return response
         else:
@@ -1448,7 +2108,7 @@ def edit_gst_detail(request, gst_id):
                 for error in errors:
                     messages.error(request, f'{field}: {error}')
     
-    response = redirect('superuser_dashboard')
+    response = redirect('company_admin_dashboard')
     response['Location'] = response['Location'] + '?section=settings'
     return response
 #--------------------------------------------------------------------------------------------------
@@ -1475,7 +2135,7 @@ def delete_gst_detail(request, gst_id):
         gst_detail.delete()
         messages.success(request, f'GST Details for {state_name} deleted successfully!')
     
-    response = redirect('superuser_dashboard')
+    response = redirect('company_admin_dashboard')
     response['Location'] = response['Location'] + '?section=settings'
     return response
 #-------------------------------------------------------------------------------------------------

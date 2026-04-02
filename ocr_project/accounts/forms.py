@@ -6,14 +6,68 @@ import re
 class SignupForm(forms.ModelForm):
     class Meta:
         model = CompanyDetails
+        # added pan field to the form for validation and input
         fields = ['business_name', 'business_code', 'constitution', 'contact_person_name', 
                   'country_code', 'contact_person_number', 'contact_person_email', 
-                  'address_line1', 'address_line2']
+                  'address_line1', 'address_line2' , 'pan']  
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
+        
+        # Required fields (Backend Validation)
+        self.fields['contact_person_name'].required = True
+        self.fields['contact_person_number'].required = True
+        self.fields['contact_person_email'].required = True
+        self.fields['pan'].required = True    
+
+        # Required fields (Frontend HTML Validation)  
+        self.fields['contact_person_name'].widget.attrs.update({'required': True})
+        self.fields['contact_person_number'].widget.attrs.update({'required': True})
+        self.fields['contact_person_email'].widget.attrs.update({'required': True})
+        self.fields['pan'].widget.attrs.update({'required': True})  
+        self.fields['contact_person_number'].widget.attrs.update({'required': True,'maxlength': '10','pattern': '[0-9]{10}', 'title': 'Enter a valid 10 digit mobile number'})
+       
+        # PAN uppercase styling
+        # Always converting PAN to uppercase
+        self.fields['pan'].widget.attrs.update({
+            'style': 'text-transform:uppercase'
+        })
+    
+
+    # Pan validation method to ensure correct format 
+    def clean_pan(self):
+        pan = self.cleaned_data.get('pan')
+
+        if pan:
+            pan = pan.upper()
+            pattern = r'^[A-Z]{5}[0-9]{4}[A-Z]$'
+
+            if not re.match(pattern, pan):
+                raise forms.ValidationError("Invalid PAN format")
+
+        return pan
+
+    # Mobile number validation to ensure correct format
+    def clean_contact_person_number(self):
+        number = self.cleaned_data.get('contact_person_number')
+
+        if number:
+            number = number.strip()
+        
+            # Ensure only digits
+            if not number.isdigit():
+                raise forms.ValidationError("Contact number must contain only digits.")
+        
+            # Ensure length is 10 digits
+            if len(number) != 10:
+                raise forms.ValidationError("Mobile number must be exactly 10 digits.")
+            
+        return number
+        
+
 
 
 class GSTDetailsForm(forms.ModelForm):
@@ -128,11 +182,11 @@ class UserManagementForm(forms.ModelForm):
     # Only Processor role available
     role = forms.ChoiceField(
         choices=[
-            ('Processor', 'Processor'),
+            ('PROCESSOR', 'Processor'),
         ],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label="Role",
-        initial='Processor'
+        initial='PROCESSOR'
     )
     
     # Status with Active as default
@@ -213,8 +267,8 @@ class UserManagementForm(forms.ModelForm):
         #user.role = self.cleaned_data['role']
         #user.status = self.cleaned_data['status']
 
-        # Always set role to Processor (even if somehow overridden)
-        user.role = 'Processor'
+        # Always set role to PROCESSOR (even if somehow overridden)
+        user.role = 'PROCESSOR'
         
         # Get status, default to Active if somehow empty
         user.status = self.cleaned_data.get('status') or 'Active'
@@ -229,5 +283,9 @@ class UserManagementForm(forms.ModelForm):
 
 
 
+# Form for uploading E-Invoice Register Excel file
+from django import forms
+class EInvoiceUploadForm(forms.Form):
+    file = forms.FileField()
 
 
