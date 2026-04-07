@@ -760,20 +760,22 @@ def get_einvoice_comparison(request, invoice_id):
     - Match status for each field
     """
     try:
-        invoice = get_object_or_404(
-            Invoice,
+        invoice = get_object_or_404(                               # fetch invoice by ID
+            Invoice,                                               # ensures user can only access their company data
             id=invoice_id,
             company=request.user.company_code,
         )
 
-        def _clean(value):
-            if value is None:
+
+        def _clean(value):                                    # these function normalize data before comparison
+            if value is None:                                 # converts everything to string
                 return ""
-            if isinstance(value, datetime):
+            if isinstance(value, datetime):                   # handles none and formats datetime
                 return value.strftime("%d/%m/%Y")
             return str(value).strip()
+   
 
-        def _normalize_date(value):
+        def _normalize_date(value):                           # normalize date to DD/MM/YYYY for better comparsion 
             text = _clean(value)
             if not text:
                 return ""
@@ -783,22 +785,24 @@ def get_einvoice_comparison(request, invoice_id):
                 return f"{parts[2].zfill(2)}/{parts[1].zfill(2)}/{parts[0]}"
             return text
 
-        def _normalize_amount(value):
+        def _normalize_amount(value):                         # removes commas, currency symbols and extra spaces for better comparison of amounts 
             text = _clean(value)
             if not text:
                 return ""
             return text.replace(",", "").replace("₹", "").strip()
 
-        def _normalize_gstin(value):
+
+        def _normalize_gstin(value):                         # removes spaces/special characters and converts to uppercase                   
             text = _clean(value).upper()
             return re.sub(r"[^A-Z0-9]", "", text)
 
-        ocr_data = invoice.raw_ocr_response or {}
-        invoice_data = ocr_data.get("result", {}).get("Invoice_data", {})
+        ocr_data = invoice.raw_ocr_response or {}            
+        invoice_data = ocr_data.get("result", {}).get("Invoice_data", {})      # reads raw ocr json and extracts important fields
+
 
         # Extract key fields from OCR
         ocr_fields = {
-            "Supplier GSTIN": _clean(invoice_data.get("Vendor Gst No.")),
+            "Supplier GSTIN": _clean(invoice_data.get("Vendor Gst No.")),      # 
             "Document Number": _clean(invoice_data.get("InvoiceId")),
             "Document Date": _clean(invoice_data.get("InvoiceDate")),
             "Invoice Amount": _clean(invoice_data.get("InvoiceTotal")),
@@ -809,7 +813,7 @@ def get_einvoice_comparison(request, invoice_id):
 
         # Try to find matching E-Invoice Register record by IRN
         irn = _clean(ocr_fields.get("IRN"))
-        supplier_gstin = _normalize_gstin(ocr_fields.get("Supplier GSTIN"))
+        supplier_gstin = _normalize_gstin(ocr_fields.get("Supplier GSTIN"))       
         document_number = _clean(ocr_fields.get("Document Number"))
         einvoice_record = None
         match_basis = "none"
@@ -854,7 +858,6 @@ def get_einvoice_comparison(request, invoice_id):
         for field_label, db_field in fields_to_compare:
             uploaded_value = _clean(ocr_fields.get(field_label))
             govt_value = ""
-            # match_status = "Review"
             match_status = "Mismatch"
             
 
@@ -874,6 +877,7 @@ def get_einvoice_comparison(request, invoice_id):
                     uploaded_compare = _normalize_amount(uploaded_value)
                     govt_compare = _normalize_amount(govt_value)
 
+
                 if uploaded_compare == govt_compare and uploaded_compare:
                     match_status = "Matched"
 
@@ -886,6 +890,7 @@ def get_einvoice_comparison(request, invoice_id):
                             match_status = "Matched"
                     except Exception:
                         pass
+
 
                 elif field_label == "Document Date" and uploaded_value and govt_value:
                     # For dates, normalize formats
@@ -1051,52 +1056,6 @@ def get_invoice_remarks(request, invoice_id):
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # -----======================== MODAL POPUP INVOICE BUTTON FUNCTIONALITY ========================-----
 # In this view we will get the raw data from session and return as JsonResponse
@@ -1452,7 +1411,6 @@ def get_invoice_raw_data(request, invoice_id):
 
     return JsonResponse(response_data, safe=False)
 '''
-
 
 # 2nd version of get_invoice_raw_data view
 @login_required
