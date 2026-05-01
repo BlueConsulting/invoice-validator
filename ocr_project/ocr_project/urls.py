@@ -17,7 +17,6 @@ Including another URLconf
 # from django.contrib import admin
 # from django.urls import path
 # from accounts.views import signup_view, login_view
-
 # from django.urls import path, include
 
 # urlpatterns = [

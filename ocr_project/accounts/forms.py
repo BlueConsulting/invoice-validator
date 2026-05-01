@@ -69,7 +69,6 @@ class SignupForm(forms.ModelForm):
         
 
 
-
 class GSTDetailsForm(forms.ModelForm):
     """
     Form for adding/editing GST registration details.
